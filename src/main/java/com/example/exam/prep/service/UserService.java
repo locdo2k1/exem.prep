@@ -1,12 +1,13 @@
 package com.example.exam.prep.service;
 
+import com.example.exam.prep.config.automapper.GenericMapper;
 import com.example.exam.prep.model.User;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-public class UserService implements IUserService{
+public class UserService implements IUserService {
     @Autowired
     private IUnitOfWork unitOfWork;
 
@@ -25,7 +26,9 @@ public class UserService implements IUserService{
     }
 
     public boolean saveUser(User user) {
-        return unitOfWork.getUserRepository().save(user);
+        User findedUser = unitOfWork.getUserRepository().findById(user.getId());
+        GenericMapper.toEntity(user, findedUser);
+        return unitOfWork.getUserRepository().save(findedUser);
     }
 
     public void deleteUser(Long id) {

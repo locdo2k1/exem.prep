@@ -1,7 +1,5 @@
 package com.example.exam.prep.model;
-import lombok.Data;
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
