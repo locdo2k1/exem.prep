@@ -24,9 +24,8 @@ public class UserService implements IUserService{
         return users;
     }
 
-    public User saveUser(User user) {
-        User savedUser = unitOfWork.getUserRepository().save(user);
-        return savedUser;
+    public boolean saveUser(User user) {
+        return unitOfWork.getUserRepository().save(user);
     }
 
     public void deleteUser(Long id) {

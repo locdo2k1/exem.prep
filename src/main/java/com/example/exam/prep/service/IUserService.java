@@ -10,7 +10,7 @@ public interface IUserService {
 
     List<User> getAllUsers();
 
-    User saveUser(User user);
+    boolean saveUser(User user);
 
     void deleteUser(Long id);
 }
