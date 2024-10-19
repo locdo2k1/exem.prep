@@ -1,17 +1,13 @@
 package com.example.exam.prep.model;
 import lombok.Data;
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
+
 import java.util.List;
 
 @Entity
-@Data
 @Table(name = "questions")
 public class Question extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(nullable = false)
     private String text; // The text of the question
 

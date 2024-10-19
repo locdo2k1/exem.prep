@@ -1,35 +1,42 @@
 package com.example.exam.prep.model;
-import lombok.Data;
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+
 
 @MappedSuperclass
-@Data
+@Getter
+@Setter
 public abstract class BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false; // Flag to indicate if the entity is deleted
-
-    @Column(name = "inserted_at", nullable = false, updatable = false)
-    private LocalDateTime insertedAt; // Timestamp for when the entity was created
-
-    @Column(name = "inserted_by", nullable = false, updatable = false)
-    private String insertedBy; // The user who created the entity
+    @Column(name = "inserted_at", updatable = false)
+    private LocalDateTime insertedAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt; // Timestamp for when the entity was last updated
+    private LocalDateTime updatedAt;
 
-    @Column(name = "updated_by")
-    private String updatedBy; // The user who last updated the entity
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inserted_by_id", referencedColumnName = "id", updatable = false)
+    private User insertedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by_id", referencedColumnName = "id")
+    private User updatedBy;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
 
     @PrePersist
     protected void onCreate() {
-        insertedAt = LocalDateTime.now();
+        this.insertedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+        this.isDeleted = false;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+
 }
-
