@@ -2,13 +2,11 @@ package com.example.exam.prep.unitofwork;
 
 import com.example.exam.prep.model.Question;
 import com.example.exam.prep.model.User;
-import com.example.exam.prep.repository.GenericRepository;
-import com.example.exam.prep.repository.GenericRepositoryImpl;
+import com.example.exam.prep.repository.IUserRepository;
+import com.example.exam.prep.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
-import lombok.Getter;
-import lombok.Setter;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -17,16 +15,16 @@ import java.util.List;
 public class UnitOfWorkImpl implements IUnitOfWork {
 
     private final EntityManager entityManager;
-    private final GenericRepository<User, Long> userRepository;
+    private final IUserRepository userRepository;
 
     @Autowired
     public UnitOfWorkImpl(EntityManager entityManager) {
         this.entityManager = entityManager;
-        this.userRepository = new GenericRepositoryImpl<>(this.entityManager, User.class);
+        this.userRepository = new UserRepository(this.entityManager);
     }
 
     @Override
-    public GenericRepository<User, Long> getUserRepository() {
+    public IUserRepository getUserRepository() {
         Session session = entityManager.unwrap(Session.class);
         // create a CriteriaBuilder instance
         CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();

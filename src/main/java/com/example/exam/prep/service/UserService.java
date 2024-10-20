@@ -20,7 +20,6 @@ public class UserService implements IUserService {
     }
 
     public List<User> getAllUsers() {
-
         List<User> users = unitOfWork.getUserRepository().findAll();
         return users;
     }
@@ -36,5 +35,12 @@ public class UserService implements IUserService {
         if (user != null) {
             unitOfWork.getUserRepository().delete(user);
         }
+    }
+
+    public boolean register(String username, String password) {
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(password);
+        return unitOfWork.getUserRepository().save(user);
     }
 }

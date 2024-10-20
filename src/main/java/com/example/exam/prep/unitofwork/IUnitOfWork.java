@@ -1,12 +1,9 @@
 package com.example.exam.prep.unitofwork;
 
-import com.example.exam.prep.model.User;
-import com.example.exam.prep.repository.GenericRepository;
-import com.example.exam.prep.repository.GenericRepositoryImpl;
-import jakarta.persistence.EntityManager;
+import com.example.exam.prep.repository.IUserRepository;
 
 public interface IUnitOfWork {
-    GenericRepository<User, Long> getUserRepository();
+    IUserRepository getUserRepository();
     void beginTransaction();
     void commitTransaction();
     void rollbackTransaction();
