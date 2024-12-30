@@ -1,8 +1,10 @@
 package com.example.exam.prep.repository;
 
 import com.example.exam.prep.model.User;
+import org.springframework.stereotype.Repository;
 
-public interface IUserRepository extends GenericRepository<User, Long> {
+@Repository
+public interface IUserRepository extends GenericRepository<User> {
     User findByUsername(String username);
 }
 

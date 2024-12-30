@@ -15,8 +15,7 @@ public class UserService implements IUserService {
     }
 
     public User getUser(Long id) {
-        User user = unitOfWork.getUserRepository().findById(id);
-        return user;
+        throw new UnsupportedOperationException();
     }
 
     public List<User> getAllUsers() {
@@ -25,22 +24,14 @@ public class UserService implements IUserService {
     }
 
     public boolean saveUser(User user) {
-        User findedUser = unitOfWork.getUserRepository().findById(user.getId());
-        GenericMapper.toEntity(user, findedUser);
-        return unitOfWork.getUserRepository().save(findedUser);
+        throw new UnsupportedOperationException();
     }
 
     public void deleteUser(Long id) {
-        User user = unitOfWork.getUserRepository().findById(id);
-        if (user != null) {
-            unitOfWork.getUserRepository().delete(user);
-        }
+        throw new UnsupportedOperationException();
     }
 
     public boolean register(String username, String password) {
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(password);
-        return unitOfWork.getUserRepository().save(user);
+        throw new UnsupportedOperationException();
     }
 }

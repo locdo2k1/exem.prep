@@ -7,6 +7,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,6 @@ import java.util.Date;
 @Service
 public class LoginService implements ILoginService {
     private final IUnitOfWork unitOfWork;
-
     private final String SECRET_KEY;
 
     @Autowired
@@ -72,7 +72,6 @@ public class LoginService implements ILoginService {
         User user = new User();
         user.setUsername(username);
         user.setPassword(password);
-        unitOfWork.getUserRepository().save(user);
-        return user;
+        return unitOfWork.getUserRepository().save(user);
     }
 }

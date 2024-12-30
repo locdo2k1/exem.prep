@@ -4,9 +4,5 @@ import com.example.exam.prep.repository.IUserRepository;
 
 public interface IUnitOfWork {
     IUserRepository getUserRepository();
-    void beginTransaction();
-    void commitTransaction();
-    void rollbackTransaction();
-    void close();
 }
 
