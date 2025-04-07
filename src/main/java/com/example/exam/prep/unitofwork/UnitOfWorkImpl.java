@@ -3,7 +3,9 @@ package com.example.exam.prep.unitofwork;
 import com.example.exam.prep.repository.IUserRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.stereotype.Service;
 
+@Service
 public class UnitOfWorkImpl implements IUnitOfWork {
 
     private final EntityManager entityManager;
@@ -11,7 +13,6 @@ public class UnitOfWorkImpl implements IUnitOfWork {
     @Autowired
     private IUserRepository userRepository;
 
-    @Autowired
     public UnitOfWorkImpl(EntityManager entityManager) {
         this.entityManager = entityManager;
     }

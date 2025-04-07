@@ -1,12 +1,12 @@
 package com.example.exam.prep.config;
 
+import com.example.exam.prep.model.User;
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -34,7 +34,7 @@ public class BearerTokenFilter extends OncePerRequestFilter {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
             try {
-                Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+                Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey.getBytes()).parseClaimsJws(token);
                 String username = claims.getBody().getSubject();
                 List<String> authoritiesList = (List<String>) claims.getBody().get("authorities");
                 if (authoritiesList == null || authoritiesList.isEmpty()) {
@@ -43,8 +43,9 @@ public class BearerTokenFilter extends OncePerRequestFilter {
                 List<SimpleGrantedAuthority> authorities = authoritiesList.stream()
                         .map(authority -> new SimpleGrantedAuthority(authority))
                         .collect(Collectors.toList());
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                User user = new User(username, null, "email");
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
+                authentication.setDetails(user);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 logger.debug("SecurityContextHolder after filter chain: {}", SecurityContextHolder.getContext().getAuthentication());
             } catch (JwtException e) {

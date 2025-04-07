@@ -16,11 +16,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private final String SECRET_KEY;
+    private final String secretKey;
 
     @Autowired
     public SecurityConfig(@Value("${secret.key}") String secretKey) {
-        this.SECRET_KEY = secretKey;
+        this.secretKey = secretKey;
     }
 
     @Bean
@@ -39,7 +39,7 @@ public class SecurityConfig {
                             .anyRequest().fullyAuthenticated()
                     )
                     .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .addFilterBefore(new BearerTokenFilter(SECRET_KEY), UsernamePasswordAuthenticationFilter.class);
+                    .addFilterBefore(new BearerTokenFilter(secretKey), UsernamePasswordAuthenticationFilter.class);
         } catch (Exception e) {
             e.printStackTrace();
         }
