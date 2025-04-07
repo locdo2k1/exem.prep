@@ -12,6 +12,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -30,21 +32,26 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        try {
-            http
-                    .csrf(AbstractHttpConfigurer::disable)
-                    .authorizeHttpRequests(auth -> auth
-                            .requestMatchers("api/auth/login").permitAll()
-                            .requestMatchers("api/auth/register").permitAll()
-                            .anyRequest().fullyAuthenticated()
-                    )
-                    .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .addFilterBefore(new BearerTokenFilter(secretKey), UsernamePasswordAuthenticationFilter.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        http
+                .cors(cors -> cors.configurationSource(request -> corsConfiguration()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/register").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new BearerTokenFilter(secretKey), UsernamePasswordAuthenticationFilter.class);
 
-        // Add the BearerTokenFilter
         return http.build();
+    }
+
+    @Bean
+    public CorsConfiguration corsConfiguration() {
+        CorsConfiguration corsConfig = new CorsConfiguration();
+        corsConfig.setAllowedOrigins(Collections.singletonList("*"));
+        corsConfig.setAllowedMethods(Collections.singletonList("*"));
+        corsConfig.setAllowedHeaders(Collections.singletonList("*"));
+        return corsConfig;
     }
 }
