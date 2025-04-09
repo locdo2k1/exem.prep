@@ -27,7 +27,7 @@ public class AuthController {
         if (authHeader != null && authHeader.startsWith("Basic ")) {
             String base64Credentials = authHeader.substring("Basic".length()).trim();
             String credentials = new String(Base64.getDecoder().decode(base64Credentials), StandardCharsets.UTF_8);
--
+            String[] values = credentials.split(":");
             String username = values[0];
             String password = values[1];
 
@@ -52,4 +52,3 @@ public class AuthController {
         }
     }
 }
-+
