@@ -9,18 +9,24 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidParameterException;
 import java.util.Date;
 
 @Service
-public class LoginService implements ILoginService {
+public class AuthService implements IAuthService {
     private final IUnitOfWork unitOfWork;
     private final String secretKey;
 
     @Autowired
-    public LoginService(@Value("${secret.key}") String secretKey, IUnitOfWork unitOfWork) {
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    public AuthService(@Value("${secret.key}") String secretKey, IUnitOfWork unitOfWork) {
         this.unitOfWork = unitOfWork;
         this.secretKey = secretKey;
     }
@@ -28,7 +34,7 @@ public class LoginService implements ILoginService {
     @Override
     public String login(String username, String password) {
         User user = unitOfWork.getUserRepository().findByUsername(username);
-        if (user != null && user.getPassword().equals(password)) {
+        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
             return generateToken(user);
         }
         throw new InvalidParameterException("Invalid username or password");
@@ -71,10 +77,11 @@ public class LoginService implements ILoginService {
     }
 
     @Override
-    public User register(String username, String password) {
+    public User register(String username, String email, String password) {
         User user = new User();
         user.setUsername(username);
-        user.setPassword(password);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password)); // Hash the password
         return unitOfWork.getUserRepository().save(user);
     }
 }

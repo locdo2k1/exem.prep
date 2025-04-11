@@ -2,7 +2,7 @@ package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.User;
 import com.example.exam.prep.model.request.RegisterRequest;
-import com.example.exam.prep.service.LoginService;
+import com.example.exam.prep.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +15,11 @@ import java.util.Base64;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final LoginService loginService;
+    private final AuthService authService;
 
     @Autowired
-    public AuthController(LoginService loginService) {
-        this.loginService = loginService;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/login")
@@ -32,7 +32,7 @@ public class AuthController {
             String password = values[1];
 
             try {
-                String token = loginService.login(username, password);
+                String token = authService.login(username, password);
                 return ResponseEntity.ok(token);
             } catch (InvalidParameterException e) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
@@ -44,9 +44,9 @@ public class AuthController {
 
     @PostMapping("/register")
     public String register(@RequestBody RegisterRequest registerRequest) {
-        User user = loginService.register(registerRequest.getUsername(), registerRequest.getPassword());
+        User user = authService.register(registerRequest.getUsername(), registerRequest.getEmail(), registerRequest.getPassword());
         if (user != null) {
-            return loginService.generateToken(user);
+            return authService.generateToken(user);
         } else {
             return null;
         }

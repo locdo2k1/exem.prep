@@ -2,7 +2,7 @@ package com.example.exam.prep.service;
 
 import com.example.exam.prep.model.User;
 
-public interface ILoginService {
+public interface IAuthService {
     /**
      * Authenticates a user and returns a token if successful.
      *
@@ -29,5 +29,5 @@ public interface ILoginService {
      */
     User getUserFromToken(String token);
 
-    User register(String username, String password);
+    User register(String username, String email, String password);
 }
