@@ -29,5 +29,21 @@ public interface IAuthService {
      */
     User getUserFromToken(String token);
 
+    /**
+     * Registers a new user with the given information.
+     *
+     * @param username the username to register
+     * @param email the email to register
+     * @param password the password to register
+     * @return the registered user
+     */
     User register(String username, String email, String password);
+
+    /**
+     * Generates a token for the given user.
+     *
+     * @param user the user to generate a token for
+     * @return the token
+     */
+    String generateToken(User user);
 }

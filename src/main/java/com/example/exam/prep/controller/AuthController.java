@@ -2,7 +2,8 @@ package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.User;
 import com.example.exam.prep.model.request.RegisterRequest;
-import com.example.exam.prep.service.AuthService;
+import com.example.exam.prep.service.IAuthService;
+import com.example.exam.prep.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +16,13 @@ import java.util.Base64;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthService authService;
+    private final IAuthService authService;
+    private final IUserService userService;
 
     @Autowired
-    public AuthController(AuthService authService) {
+    public AuthController(IAuthService authService, IUserService userService) {
         this.authService = authService;
+        this.userService = userService;
     }
 
     @PostMapping("/login")
@@ -42,13 +45,23 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest registerRequest) {
-        User user = authService.register(registerRequest.getUsername(), registerRequest.getEmail(), registerRequest.getPassword());
-        if (user != null) {
-            return authService.generateToken(user);
-        } else {
-            return null;
+    @PostMapping("/signup")
+    public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) {
+        try {
+            boolean existingUser = userService.findByUsername(registerRequest.getUsername()) != null;
+            if (existingUser) {
+                return ResponseEntity.badRequest().body("Username '" + registerRequest.getUsername() + "' already exists");
+            }
+
+            User user = authService.register(registerRequest.getUsername(), registerRequest.getEmail(), registerRequest.getPassword());
+            if (user != null) {
+                String token = authService.generateToken(user);
+                return ResponseEntity.ok(token);
+            } else {
+                return ResponseEntity.badRequest().body("Failed to create user");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating user: " + e.getMessage());
         }
     }
 }
