@@ -2,8 +2,8 @@ package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.User;
 import com.example.exam.prep.model.request.RegisterRequest;
-import com.example.exam.prep.service.IAuthService;
 import com.example.exam.prep.service.IUserService;
+import com.example.exam.prep.service.authentication.IAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,5 +63,11 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating user: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/token")
+    public ResponseEntity<String> getAuthToken(@RequestParam("code") String code, @RequestParam("provider") String provider) {
+        String token = authService.getAuthToken(code, provider);
+        return ResponseEntity.ok(token);
     }
 }

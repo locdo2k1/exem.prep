@@ -1,6 +1,7 @@
-package com.example.exam.prep.service;
+package com.example.exam.prep.service.authentication;
 
 import com.example.exam.prep.model.User;
+import org.springframework.http.ResponseEntity;
 
 public interface IAuthService {
     /**
@@ -46,4 +47,13 @@ public interface IAuthService {
      * @return the token
      */
     String generateToken(User user);
+
+    /**
+     * Returns an auth token for the given code and provider.
+     *
+     * @param code     the authorization code
+     * @param provider the authentication provider (e.g. Google, Facebook)
+     * @return the auth token, or null if authentication fails
+     */
+    String getAuthToken(String code, String provider);
 }

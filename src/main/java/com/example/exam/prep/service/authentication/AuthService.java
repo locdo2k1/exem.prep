@@ -1,4 +1,4 @@
-package com.example.exam.prep.service;
+package com.example.exam.prep.service.authentication;
 
 import com.example.exam.prep.model.User;
 import com.example.exam.prep.model.viewmodels.UserInfoVM;
@@ -19,14 +19,16 @@ import java.util.Date;
 public class AuthService implements IAuthService {
     private final IUnitOfWork unitOfWork;
     private final String secretKey;
+    private final AuthManager authManager;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AuthService(@Value("${secret.key}") String secretKey, IUnitOfWork unitOfWork) {
+    public AuthService(@Value("${secret.key}") String secretKey, IUnitOfWork unitOfWork, AuthManager authManager) {
         this.unitOfWork = unitOfWork;
         this.secretKey = secretKey;
+        this.authManager = authManager;
     }
 
     @Override
@@ -42,8 +44,8 @@ public class AuthService implements IAuthService {
     public User validateToken(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
-                                .setSigningKey(new SecretKeySpec(this.secretKey.getBytes(), SignatureAlgorithm.HS256.getJcaName()))
-                                .build().parseClaimsJws(token).getBody();
+                    .setSigningKey(new SecretKeySpec(this.secretKey.getBytes(), SignatureAlgorithm.HS256.getJcaName()))
+                    .build().parseClaimsJws(token).getBody();
             String username = claims.getSubject();
             return unitOfWork.getUserRepository().findByUsername(username);
         } catch (JwtException e) {
@@ -53,7 +55,7 @@ public class AuthService implements IAuthService {
 
     public String generateToken(User user) {
         Claims claims = Jwts.claims()
-                            .setSubject(user.getUsername());
+                .setSubject(user.getUsername());
         UserInfoVM userInfoVM = new UserInfoVM();
         userInfoVM.setUsername(user.getUsername());
         userInfoVM.setEmail(user.getEmail());
@@ -81,5 +83,17 @@ public class AuthService implements IAuthService {
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password)); // Hash the password
         return unitOfWork.getUserRepository().save(user);
+    }
+
+    @Override
+    public String getAuthToken(String code, String provider) {
+        String email = authManager.getEmail(code);
+        if (email != null) {
+            // Generate a new token for the authenticated user
+            User user = unitOfWork.getUserRepository().findByEmail(email);
+            return generateToken(user);
+        } else {
+            throw new InvalidParameterException("Invalid authentication code or provider");
+        }
     }
 }

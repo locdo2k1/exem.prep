@@ -2,8 +2,6 @@ package com.example.exam.prep.service;
 
 import com.example.exam.prep.model.User;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
