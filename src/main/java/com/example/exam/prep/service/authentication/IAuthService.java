@@ -1,7 +1,6 @@
 package com.example.exam.prep.service.authentication;
 
 import com.example.exam.prep.model.User;
-import org.springframework.http.ResponseEntity;
 
 public interface IAuthService {
     /**

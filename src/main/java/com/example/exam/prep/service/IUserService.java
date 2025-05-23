@@ -13,7 +13,7 @@ public interface IUserService {
 
     boolean saveUser(User user);
 
-    void deleteUser(Long id) throws Exception;
+    void deleteUser(Long id);
 
     User findByUsername(String username);
 }

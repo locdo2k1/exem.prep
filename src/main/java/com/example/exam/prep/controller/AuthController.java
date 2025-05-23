@@ -67,7 +67,11 @@ public class AuthController {
 
     @PostMapping("/token")
     public ResponseEntity<String> getAuthToken(@RequestParam("code") String code, @RequestParam("provider") String provider) {
-        String token = authService.getAuthToken(code, provider);
-        return ResponseEntity.ok(token);
+        try {
+            String token = authService.getAuthToken(code, provider);
+            return ResponseEntity.ok(token);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error generating auth token: " + e.getMessage());
+        }
     }
 }

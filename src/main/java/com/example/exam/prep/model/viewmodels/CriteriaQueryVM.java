@@ -1,6 +1,5 @@
 package com.example.exam.prep.model.viewmodels;
 
-import com.example.exam.prep.model.BaseEntity;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import lombok.Getter;

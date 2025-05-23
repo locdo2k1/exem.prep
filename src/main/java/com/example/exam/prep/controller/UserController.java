@@ -6,16 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
     @Autowired
-    private IUserService userService;
+    private final IUserService userService;
 
-    public UserController() {
+    public UserController(IUserService userService) {
+        this.userService = userService;
     }
 
     @GetMapping
@@ -32,14 +32,17 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
-        boolean isSucess = userService.saveUser(user);
-        return new ResponseEntity<>(user, HttpStatus.CREATED);
+        boolean isSuccess = userService.saveUser(user);
+        return isSuccess ? new ResponseEntity<>(user, HttpStatus.CREATED) : new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        boolean isSuccess = userService.saveUser(user);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        if (userService.saveUser(user)) {
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -47,8 +50,8 @@ public class UserController {
         try {
             userService.deleteUser(id);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return ResponseEntity.badRequest().build();
         }
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok().build();
     }
 }

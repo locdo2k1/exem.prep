@@ -87,13 +87,14 @@ public class AuthService implements IAuthService {
 
     @Override
     public String getAuthToken(String code, String provider) {
-        String email = authManager.getEmail(code);
-        if (email != null) {
-            // Generate a new token for the authenticated user
-            User user = unitOfWork.getUserRepository().findByEmail(email);
-            return generateToken(user);
-        } else {
+        String email = authManager.getEmail(code, provider);
+        if (email == null) {
             throw new InvalidParameterException("Invalid authentication code or provider");
         }
+        User user = unitOfWork.getUserRepository().findByEmail(email);
+        if (user == null) {
+            throw new InvalidParameterException("User not found for the given email");
+        }
+        return generateToken(user);
     }
 }
