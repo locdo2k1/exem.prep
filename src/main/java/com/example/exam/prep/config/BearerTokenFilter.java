@@ -1,7 +1,10 @@
 package com.example.exam.prep.config;
 
 import com.example.exam.prep.model.User;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BearerTokenFilter extends OncePerRequestFilter {
-    private static final Logger logger = LoggerFactory.getLogger(BearerTokenFilter.class);
+    private static final Logger logger4j = LoggerFactory.getLogger(BearerTokenFilter.class);
     private final String secretKey;
 
     @Autowired
@@ -34,23 +37,23 @@ public class BearerTokenFilter extends OncePerRequestFilter {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
             try {
-                Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey.getBytes()).parseClaimsJws(token);
+                Jws<Claims> claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
                 String username = claims.getBody().getSubject();
                 List<String> authoritiesList = (List<String>) claims.getBody().get("authorities");
                 if (authoritiesList == null || authoritiesList.isEmpty()) {
                     authoritiesList = Collections.singletonList("DEFAULT_ROLE"); // or any other default role
                 }
                 List<SimpleGrantedAuthority> authorities = authoritiesList.stream()
-                        .map(authority -> new SimpleGrantedAuthority(authority))
+                        .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
                 User user = new User(username, null, "email");
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
                 authentication.setDetails(user);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                logger.debug("SecurityContextHolder after filter chain: {}", SecurityContextHolder.getContext().getAuthentication());
+                logger4j.debug("SecurityContextHolder after filter chain: {}", SecurityContextHolder.getContext().getAuthentication());
             } catch (JwtException e) {
                 // Handle invalid token
-                logger.error("Error parsing token", e);
+                logger4j.error("Error parsing token", e);
             }
         }
         filterChain.doFilter(request, response);

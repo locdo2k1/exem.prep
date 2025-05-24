@@ -15,23 +15,18 @@ import java.util.Optional;
 @Configuration
 @EnableJpaAuditing
 public class AuditingConfig {
-    @Autowired
-    private IUnitOfWork unitOfWork;
 
     @Bean
-    public AuditorAware<User> auditorAware() {
-        return new AuditorAware<User>() {
-            @Override
-            public Optional<User> getCurrentAuditor() {
-                // Get the current user from the security context
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                if (authentication != null && authentication.getDetails() instanceof String) {
-                    String username = authentication.getPrincipal().toString();
-                    User user = unitOfWork.getUserRepository().findByUsername(username);
-                    return Optional.ofNullable(user);
-                }
-                return Optional.empty();
+    public AuditorAware<User> auditorAware(@Autowired IUnitOfWork unitOfWork) {
+        return () -> {
+            // Get the current user from the security context
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getDetails() instanceof String) {
+                String username = authentication.getPrincipal().toString();
+                User user = unitOfWork.getUserRepository().findByUsername(username);
+                return Optional.ofNullable(user);
             }
+            return Optional.empty();
         };
     }
 }
