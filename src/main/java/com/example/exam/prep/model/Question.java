@@ -1,22 +1,49 @@
 package com.example.exam.prep.model;
+
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import java.util.Set;
 
-import java.util.List;
-
+@Setter
+@Getter
 @Entity
 @Table(name = "questions")
 public class Question extends BaseEntity {
-    @Column(nullable = false)
-    private String text; // The text of the question
+    @ManyToOne
+    @JoinColumn(name = "question_set_id", nullable = false)
+    private QuestionSet questionSet;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Option> options; // A list of answer options
+    @ManyToOne
+    @JoinColumn(name = "question_type_id", nullable = false)
+    private QuestionType questionType;
 
-    @Column(nullable = false)
-    private String correctAnswer; // The correct answer
+    @Column(name = "clip_number")
+    private Integer clipNumber;
 
-    private String category; // Optional: to categorize questions (e.g., Math, Science)
+    @Column(name = "audio_url")
+    private String audioUrl;
 
-    private int difficultyLevel; // Optional: to indicate difficulty level (1-5)
+    @Column(name = "prompt", columnDefinition = "NVARCHAR(MAX)")
+    private String prompt;
+
+    @ManyToMany
+    @JoinTable(
+        name = "question_answers",
+        joinColumns = @JoinColumn(name = "question_id"),
+        inverseJoinColumns = @JoinColumn(name = "option_id")
+    )
+    private Set<QuestionOption> correctOptions;
+
+    @OneToMany(mappedBy = "question")
+    private Set<FillBlankAnswer> fillBlankAnswers;
+
+    // Constructors
+    public Question() {}
+
+    public Question(QuestionSet questionSet, QuestionType questionType, String prompt) {
+        this.questionSet = questionSet;
+        this.questionType = questionType;
+        this.prompt = prompt;
+    }
 }
-
