@@ -28,6 +28,9 @@ public class QuestionSet extends BaseEntity {
     @ManyToMany(mappedBy = "questionSets")
     private Set<Test> tests;
 
+    @ManyToMany(mappedBy = "questionSets")
+    private Set<TestPart> testParts;
+
     // Constructors
     public QuestionSet() {}
 

@@ -18,6 +18,10 @@ public class Question extends BaseEntity {
     @JoinColumn(name = "question_type_id", nullable = false)
     private QuestionType questionType;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private QuestionCategory category;
+
     @Column(name = "clip_number")
     private Integer clipNumber;
 
@@ -38,6 +42,12 @@ public class Question extends BaseEntity {
     @OneToMany(mappedBy = "question")
     private Set<FillBlankAnswer> fillBlankAnswers;
 
+    @ManyToMany(mappedBy = "questions")
+    private Set<Test> tests;
+
+    @ManyToMany(mappedBy = "questions")
+    private Set<TestPart> testParts;
+
     // Constructors
     public Question() {}
 
@@ -45,5 +55,12 @@ public class Question extends BaseEntity {
         this.questionSet = questionSet;
         this.questionType = questionType;
         this.prompt = prompt;
+    }
+
+    public Question(QuestionSet questionSet, QuestionType questionType, String prompt, QuestionCategory category) {
+        this.questionSet = questionSet;
+        this.questionType = questionType;
+        this.prompt = prompt;
+        this.category = category;
     }
 }

@@ -20,6 +20,17 @@ public class Test extends BaseEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL)
+    private Set<TestPart> testParts;
+
+    @ManyToMany
+    @JoinTable(
+        name = "test_questions",
+        joinColumns = @JoinColumn(name = "test_id"),
+        inverseJoinColumns = @JoinColumn(name = "question_id")
+    )
+    private Set<Question> questions;
+
     @ManyToMany
     @JoinTable(
         name = "test_question_sets",
