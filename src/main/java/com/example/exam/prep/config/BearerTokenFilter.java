@@ -37,7 +37,7 @@ public class BearerTokenFilter extends OncePerRequestFilter {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
             try {
-                Jws<Claims> claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
+                Jws<Claims> claims = Jwts.parserBuilder().setSigningKey(secretKey.getBytes()).build().parseClaimsJws(token);
                 String username = claims.getBody().getSubject();
                 List<String> authoritiesList = (List<String>) claims.getBody().get("authorities");
                 if (authoritiesList == null || authoritiesList.isEmpty()) {
