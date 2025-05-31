@@ -1,6 +1,6 @@
 package com.example.exam.prep.model;
 
-import com.example.exam.prep.enums.TestStatus;
+import com.example.exam.prep.constant.status.TestStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

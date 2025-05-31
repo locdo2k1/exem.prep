@@ -1,7 +1,7 @@
 package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.Question;
-import com.example.exam.prep.model.viewmodels.ApiResponse;
+import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.QuestionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -11,7 +11,7 @@ import java.util.Set;
 @Table(name = "questions")
 public class Question extends BaseEntity {
     @ManyToOne
-    @JoinColumn(name = "question_set_id", nullable = false)
+    @JoinColumn(name = "question_set_id", nullable = true)
     private QuestionSet questionSet;
 
     @ManyToOne

@@ -1,4 +1,4 @@
-package com.example.exam.prep.model.viewmodels;
+package com.example.exam.prep.model.viewmodels.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
