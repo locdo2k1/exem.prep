@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.UUID;
+
 import static com.example.exam.prep.constant.response.UserResponseMessage.*;
 
 @RestController
@@ -25,7 +27,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<User>> getUserById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<User>> getUserById(@PathVariable UUID id) {
         User user = userService.getUser(id);
         if (user != null) {
             return ResponseEntity.ok(ApiResponse.success(user, USER_RETRIEVED.getMessage()));
@@ -45,7 +47,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable UUID id, @RequestBody User user) {
         User existingUser = userService.getUser(id);
         if (existingUser == null) {
             return ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404));
@@ -61,7 +63,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable UUID id) {
         User existingUser = userService.getUser(id);
         if (existingUser == null) {
             return ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404));

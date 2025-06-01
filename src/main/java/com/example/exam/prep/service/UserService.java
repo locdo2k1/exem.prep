@@ -5,6 +5,7 @@ import com.example.exam.prep.unitofwork.IUnitOfWork;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UserService implements IUserService {
@@ -15,7 +16,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public User getUser(Long id) {
+    public User getUser(UUID id) {
         return unitOfWork.getUserRepository().findById(id).orElse(null);
     }
 
@@ -36,7 +37,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public void deleteUser(Long id) {
+    public void deleteUser(UUID id) {
         unitOfWork.getUserRepository().deleteById(id);
     }
 

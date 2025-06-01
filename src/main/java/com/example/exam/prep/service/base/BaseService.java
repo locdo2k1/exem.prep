@@ -5,6 +5,7 @@ import com.example.exam.prep.repository.GenericRepository;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Transactional
 public abstract class BaseService<T extends BaseEntity> implements IBaseService<T> {
@@ -20,7 +21,7 @@ public abstract class BaseService<T extends BaseEntity> implements IBaseService<
     }
 
     @Override
-    public Optional<T> findById(Long id) {
+    public Optional<T> findById(UUID id) {
         return repository.findById(id);
     }
 
@@ -30,7 +31,7 @@ public abstract class BaseService<T extends BaseEntity> implements IBaseService<
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(UUID id) {
         repository.deleteById(id);
     }
 }

@@ -3,6 +3,8 @@ package com.example.exam.prep.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.HashSet;
 import java.util.Set;
 
 @Setter
@@ -43,10 +45,10 @@ public class Question extends BaseEntity {
     private Set<FillBlankAnswer> fillBlankAnswers;
 
     @ManyToMany(mappedBy = "questions")
-    private Set<Test> tests;
+    private Set<Test> tests = new HashSet<>();
 
     @ManyToMany(mappedBy = "questions")
-    private Set<TestPart> testParts;
+    private Set<TestPart> testParts = new HashSet<>();
 
     // Constructors
     public Question() {}

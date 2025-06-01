@@ -7,6 +7,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
 import static com.example.exam.prep.constant.response.QuestionResponseMessage.*;
 
 @RestController
@@ -26,7 +29,7 @@ public class QuestionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Question>> getQuestionById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Question>> getQuestionById(@PathVariable UUID id) {
         return questionService.findById(id)
                 .map(question -> ResponseEntity.ok(ApiResponse.success(question, QUESTION_RETRIEVED.getMessage())))
                 .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
@@ -40,7 +43,7 @@ public class QuestionController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Question>> updateQuestion(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @RequestBody Question question) {
         return questionService.findById(id)
                 .map(existingQuestion -> {
@@ -52,7 +55,7 @@ public class QuestionController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteQuestion(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteQuestion(@PathVariable UUID id) {
         return questionService.findById(id)
                 .map(question -> {
                     questionService.deleteById(id);
