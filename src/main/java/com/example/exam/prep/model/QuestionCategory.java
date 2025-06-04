@@ -30,21 +30,21 @@ public class QuestionCategory extends BaseEntity {
      * Unique identifier code for the category.
      * @example "PART1_PEOPLE", "PART1_OBJECTS"
      */
-    @Column(name = "code", nullable = false, unique = true)
+    @Column(name = "code", nullable = false, unique = true, columnDefinition = "NVARCHAR(255)")
     private String code;
 
     /**
      * The skill being tested in this category.
      * @example "Reading"
      */
-    @Column(name = "skill", nullable = false)
+    @Column(name = "skill", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String skill;
 
     /**
      * The display name of the category.
      * @example "[Part 1] Tranh tả người", "[Part 1] Tranh tả vật"
      */
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String name;
 
     /**

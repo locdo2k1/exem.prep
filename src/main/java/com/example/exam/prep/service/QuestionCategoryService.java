@@ -19,9 +19,7 @@ public class QuestionCategoryService extends BaseService<QuestionCategory> {
 
     @Transactional(readOnly = true)
     public Page<QuestionCategory> search(String keyword, Pageable pageable) {
-        return questionCategoryRepository.findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(
-            keyword, keyword, pageable
-        );
+        return questionCategoryRepository.findByNameContainingIgnoreCase(keyword, pageable);
     }
 }
 
