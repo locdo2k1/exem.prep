@@ -33,6 +33,9 @@ public class Question extends BaseEntity {
     @Column(name = "prompt", columnDefinition = "NVARCHAR(MAX)")
     private String prompt;
 
+    @Column(name = "score")
+    private Integer score;
+
     @ManyToMany
     @JoinTable(
         name = "question_answers",

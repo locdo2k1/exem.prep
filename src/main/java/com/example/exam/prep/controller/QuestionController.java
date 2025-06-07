@@ -1,10 +1,12 @@
 package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.Question;
+import com.example.exam.prep.model.viewmodels.question.CreateQuestionViewModel;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.QuestionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,9 +37,10 @@ public class QuestionController {
                 .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<Question>> createQuestion(@RequestBody Question question) {
-        Question savedQuestion = questionService.save(question);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Question>> createQuestion(
+            @ModelAttribute CreateQuestionViewModel question) {
+        Question savedQuestion = questionService.createQuestion(question);
         return ResponseEntity.ok(ApiResponse.success(savedQuestion, QUESTION_CREATED.getMessage()));
     }
 

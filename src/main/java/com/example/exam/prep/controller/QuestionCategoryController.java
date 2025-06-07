@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
@@ -45,6 +47,17 @@ public class QuestionCategoryController {
             @RequestParam(defaultValue = "asc") String direction,
             @RequestParam(required = false) String search) {
         
+        // Decode the search parameter if it exists
+        String decodedSearch = null;
+        if (search != null && !search.trim().isEmpty()) {
+            try {
+                decodedSearch = URLDecoder.decode(search.trim(), StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                // If decoding fails, use the original search string
+                decodedSearch = search.trim();
+            }
+        }
+        
         Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) 
             ? Sort.Direction.DESC 
             : Sort.Direction.ASC;
@@ -55,8 +68,8 @@ public class QuestionCategoryController {
             Sort.by(sortDirection, sort)
         );
         
-        Page<QuestionCategory> categories = (search != null && !search.trim().isEmpty())
-            ? categoryService.search(search, pageable)
+        Page<QuestionCategory> categories = (decodedSearch != null)
+            ? categoryService.search(decodedSearch, pageable)
             : categoryService.findAll(pageable);
             
         return ResponseEntity.ok(ApiResponse.success(categories,
