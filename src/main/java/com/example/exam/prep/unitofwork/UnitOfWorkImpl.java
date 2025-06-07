@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class UnitOfWorkImpl implements IUnitOfWork {
-    private final EntityManager entityManager;
     @Autowired
     private IUserRepository userRepository;
     @Autowired
@@ -34,9 +33,10 @@ public class UnitOfWorkImpl implements IUnitOfWork {
     private ITestAttemptRepository testAttemptRepository;
     @Autowired
     private ITestPartRepository testPartRepository;
+    @Autowired
+    private IFileInfoRepository fileInfoRepository;
 
     public UnitOfWorkImpl(EntityManager entityManager) {
-        this.entityManager = entityManager;
     }
 
     @Override
@@ -102,5 +102,10 @@ public class UnitOfWorkImpl implements IUnitOfWork {
     @Override
     public ITestPartRepository getTestPartRepository() {
         return testPartRepository;
+    }
+
+    @Override
+    public IFileInfoRepository getFileInfoRepository() {
+        return fileInfoRepository;
     }
 }
