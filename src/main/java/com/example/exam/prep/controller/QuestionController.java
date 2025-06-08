@@ -2,6 +2,7 @@ package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.Question;
 import com.example.exam.prep.model.viewmodels.question.CreateQuestionViewModel;
+import com.example.exam.prep.model.viewmodels.question.QuestionViewModel;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.QuestionService;
 import org.springframework.data.domain.Page;
@@ -9,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.UUID;
 
 import static com.example.exam.prep.constant.response.QuestionResponseMessage.*;
@@ -31,7 +31,7 @@ public class QuestionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Question>> getQuestionById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<QuestionViewModel>> getQuestionById(@PathVariable UUID id) {
         return questionService.findById(id)
                 .map(question -> ResponseEntity.ok(ApiResponse.success(question, QUESTION_RETRIEVED.getMessage())))
                 .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
@@ -70,4 +70,5 @@ public class QuestionController {
                 })
                 .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
     }
+
 }

@@ -12,7 +12,7 @@ public class CreateQuestionViewModel {
     private UUID questionTypeId;
     private UUID categoryId;
     private String options;
-    private List<String> blankAnswers = new ArrayList<>();
+    private String blankAnswers;
     private List<MultipartFile> audios = new ArrayList<>();
     private int score;
 }

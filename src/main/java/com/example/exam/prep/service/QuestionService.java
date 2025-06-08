@@ -3,25 +3,31 @@ package com.example.exam.prep.service;
 import com.example.exam.prep.model.*;
 import com.example.exam.prep.model.viewmodels.option.CreateQuestionOptionViewModel;
 import com.example.exam.prep.model.viewmodels.question.CreateQuestionViewModel;
+import com.example.exam.prep.model.viewmodels.question.QuestionViewModel;
 import com.example.exam.prep.repository.IQuestionRepository;
 import com.example.exam.prep.repository.IQuestionTypeRepository;
 import com.example.exam.prep.repository.IQuestionCategoryRepository;
-import com.example.exam.prep.service.base.BaseService;
 import com.example.exam.prep.constant.file.FileConstant;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.persistence.EntityNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class QuestionService extends BaseService<Question> {
+public class QuestionService {
     private final IQuestionRepository questionRepository;
     private final IQuestionTypeRepository questionTypeRepository;
     private final IQuestionCategoryRepository questionCategoryRepository;
@@ -35,7 +41,6 @@ public class QuestionService extends BaseService<Question> {
             IQuestionCategoryRepository questionCategoryRepository,
             IFileStorageService fileStorageService,
             IUnitOfWork unitOfWork) {
-        super(questionRepository);
         this.questionRepository = questionRepository;
         this.questionTypeRepository = questionTypeRepository;
         this.questionCategoryRepository = questionCategoryRepository;
@@ -43,7 +48,6 @@ public class QuestionService extends BaseService<Question> {
         this.unitOfWork = unitOfWork;
     }
 
-    @Override
     public Page<Question> findAll(Pageable pageable) {
         return questionRepository.findAll(pageable);
     }
@@ -76,7 +80,11 @@ public class QuestionService extends BaseService<Question> {
         if (createDto.getAudios() != null && !createDto.getAudios().isEmpty()) {
             try {
                 String filePath = FileConstant.QUESTION_FILES.getStringValue();
-                fileStorageService.uploadFiles(createDto.getAudios(), filePath);
+                List<FileInfo> audioFiles = fileStorageService.uploadFiles(createDto.getAudios(), filePath);
+                audioFiles.forEach(fileInfo -> {
+                    fileInfo.setQuestion(question);
+                    unitOfWork.getFileInfoRepository().save(fileInfo);
+                });
             } catch (IOException e) {
                 throw new RuntimeException("Failed to upload audio files", e);
             }
@@ -97,6 +105,26 @@ public class QuestionService extends BaseService<Question> {
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Failed to parse question options", e);
             }
+        }
+
+        // Handle fillBlankAnswers if provided
+        ObjectMapper objectMapper = new ObjectMapper();
+        // Parse JSON string to List<String>
+        List<String> blankAnswers = null;
+        try {
+            blankAnswers = objectMapper.readValue(createDto.getBlankAnswers(), new TypeReference<List<String>>() {
+            });
+
+            if (blankAnswers != null && !blankAnswers.isEmpty()) {
+                blankAnswers.forEach(answerText -> {
+                    FillBlankAnswer fillBlankAnswer = new FillBlankAnswer();
+                    fillBlankAnswer.setQuestion(question);
+                    fillBlankAnswer.setAnswerText(answerText);
+                    unitOfWork.getFillBlankAnswerRepository().save(fillBlankAnswer);
+                });
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
 
         Question savedQuestion = questionRepository.save(question);
@@ -129,5 +157,30 @@ public class QuestionService extends BaseService<Question> {
                     return questionRepository.save(existingQuestion);
                 })
                 .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + id));
+    }
+
+    public Optional<QuestionViewModel> findById(UUID id) {
+        return questionRepository.findWithDetailsById(id)
+                .map(question -> {
+                    QuestionViewModel viewModel = new QuestionViewModel();
+                    viewModel.setPrompt(question.getPrompt());
+                    viewModel.setQuestionCategory(question.getCategory());
+                    viewModel.setQuestionType(question.getQuestionType());
+                    viewModel.setScore(question.getScore());
+                    viewModel.setQuestionAnswers(question.getFillBlankAnswers().stream()
+                            .map(FillBlankAnswer::getAnswerText)
+                            .toList());
+                    viewModel.setOptions(question.getOptions().stream().toList());
+                    viewModel.setQuestionAudios(question.getFileInfos().stream().toList());
+                    return viewModel;
+                });
+    }
+
+    public Question save(Question entity) {
+        return questionRepository.save(entity);
+    }
+
+    public void deleteById(UUID id) {
+        questionRepository.deleteById(id);
     }
 }

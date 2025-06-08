@@ -1,5 +1,6 @@
 package com.example.exam.prep.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -45,4 +46,9 @@ public class FileInfo extends BaseEntity {
 
     @Column(name = "url_expires_at")
     private LocalDateTime urlExpiresAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id")
+    @JsonIgnore
+    private Question question;
 }
