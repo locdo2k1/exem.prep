@@ -23,8 +23,8 @@ public class Question extends BaseEntity {
     @JoinColumn(name = "question_type_id", nullable = false)
     private QuestionType questionType;
 
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnore
     @JoinColumn(name = "category_id")
     private QuestionCategory category;
 
@@ -41,13 +41,8 @@ public class Question extends BaseEntity {
     private Integer score;
 
     @JsonIgnore
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "question_answers",
-        joinColumns = @JoinColumn(name = "question_id"),
-        inverseJoinColumns = @JoinColumn(name = "option_id")
-    )
-    private Set<QuestionOption> correctOptions;
+    @OneToMany(mappedBy = "question", fetch = FetchType.LAZY)
+    private Set<Option> options;
 
     @JsonIgnore
     @OneToMany(mappedBy = "question", fetch = FetchType.LAZY)
@@ -60,6 +55,10 @@ public class Question extends BaseEntity {
     @JsonIgnore
     @ManyToMany(mappedBy = "questions", fetch = FetchType.LAZY)
     private Set<TestPart> testParts = new HashSet<>();
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "question", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<FileInfo> fileInfos = new HashSet<>();
 
     // Constructors
     public Question() {}

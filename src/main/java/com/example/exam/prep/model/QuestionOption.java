@@ -23,9 +23,6 @@ public class QuestionOption extends BaseEntity {
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
-    @ManyToMany(mappedBy = "correctOptions")
-    private Set<Question> questions;
-
     // Constructors
     public QuestionOption() {}
 
