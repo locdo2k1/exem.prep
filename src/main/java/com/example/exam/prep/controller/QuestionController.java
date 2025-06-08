@@ -40,8 +40,12 @@ public class QuestionController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Question>> createQuestion(
             @ModelAttribute CreateQuestionViewModel question) {
-        Question savedQuestion = questionService.createQuestion(question);
-        return ResponseEntity.ok(ApiResponse.success(savedQuestion, QUESTION_CREATED.getMessage()));
+        try {
+            Question savedQuestion = questionService.createQuestion(question);
+            return ResponseEntity.ok(ApiResponse.success(savedQuestion, QUESTION_CREATED.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid input data", 400));
+        }
     }
 
     @PutMapping("/{id}")

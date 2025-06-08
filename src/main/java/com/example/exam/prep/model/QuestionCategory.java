@@ -1,5 +1,6 @@
 package com.example.exam.prep.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,7 +51,8 @@ public class QuestionCategory extends BaseEntity {
     /**
      * The set of questions belonging to this category.
      */
-    @OneToMany(mappedBy = "category")
+    @OneToMany(fetch = FetchType.LAZY,mappedBy = "category")
+    @JsonIgnore
     private Set<Question> questions;
 
     // Constructors

@@ -7,6 +7,8 @@ import com.example.exam.prep.repository.IQuestionRepository;
 import com.example.exam.prep.repository.IQuestionTypeRepository;
 import com.example.exam.prep.repository.IQuestionCategoryRepository;
 import com.example.exam.prep.service.base.BaseService;
+import com.example.exam.prep.constant.file.FileConstant;
+import com.example.exam.prep.unitofwork.IUnitOfWork;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.persistence.EntityNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,10 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
 import java.util.UUID;
 
 @Service
@@ -26,16 +25,22 @@ public class QuestionService extends BaseService<Question> {
     private final IQuestionRepository questionRepository;
     private final IQuestionTypeRepository questionTypeRepository;
     private final IQuestionCategoryRepository questionCategoryRepository;
+    private final IFileStorageService fileStorageService;
+    private final IUnitOfWork unitOfWork;
 
     @Autowired
     public QuestionService(
             IQuestionRepository questionRepository,
             IQuestionTypeRepository questionTypeRepository,
-            IQuestionCategoryRepository questionCategoryRepository) {
+            IQuestionCategoryRepository questionCategoryRepository,
+            IFileStorageService fileStorageService,
+            IUnitOfWork unitOfWork) {
         super(questionRepository);
         this.questionRepository = questionRepository;
         this.questionTypeRepository = questionTypeRepository;
         this.questionCategoryRepository = questionCategoryRepository;
+        this.fileStorageService = fileStorageService;
+        this.unitOfWork = unitOfWork;
     }
 
     @Override
@@ -51,41 +56,52 @@ public class QuestionService extends BaseService<Question> {
         }
 
         // Fetch related entities
-//        QuestionType questionType = questionTypeRepository.findById(createDto.getQuestionTypeId())
-//                .orElseThrow(() -> new EntityNotFoundException("QuestionType not found with id: " + createDto.getQuestionTypeId()));
+        QuestionType questionType = questionTypeRepository.findById(createDto.getQuestionTypeId())
+                .orElseThrow(() -> new EntityNotFoundException("QuestionType not found with id: " + createDto.getQuestionTypeId()));
 
         // Create and map the question
         Question question = new Question();
-//        question.setQuestionType(questionType);
+        question.setQuestionType(questionType);
         question.setPrompt(createDto.getPrompt());
-        question.setScore(createDto.getScore());
         question.setScore(createDto.getScore());
 
         // Handle category if provided
-//        if (createDto.getCategoryId() != null) {
-//            QuestionCategory category = questionCategoryRepository.findById(createDto.getCategoryId())
-//                    .orElseThrow(() -> new EntityNotFoundException("QuestionCategory not found with id: " + createDto.getCategoryId()));
-//            question.setCategory(category);
-//        }
+        if (createDto.getCategoryId() != null) {
+            QuestionCategory category = questionCategoryRepository.findById(createDto.getCategoryId())
+                    .orElseThrow(() -> new EntityNotFoundException("QuestionCategory not found with id: " + createDto.getCategoryId()));
+            question.setCategory(category);
+        }
 
-        // Handle options if provided
-        if (!createDto.getOptions().isEmpty()) {
-            ObjectMapper mapper = new ObjectMapper();
-            CreateQuestionOptionViewModel[] options = null;
+        // Handle multiple audio file uploads if provided
+        if (createDto.getAudios() != null && !createDto.getAudios().isEmpty()) {
             try {
-                options = mapper.readValue(createDto.getOptions(), CreateQuestionOptionViewModel[].class);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-            for (CreateQuestionOptionViewModel option : options) {
-                Option createdOption = new Option();
-                createdOption.setText(option.getText());
-                createdOption.setCorrect(option.isCorrect());
-                createdOption.setQuestion(question);
+                String filePath = FileConstant.QUESTION_FILES.getStringValue();
+                fileStorageService.uploadFiles(createDto.getAudios(), filePath);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload audio files", e);
             }
         }
 
-        return questionRepository.save(question);
+        // Handle options if provided
+        if (createDto.getOptions() != null && !createDto.getOptions().isEmpty()) {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                CreateQuestionOptionViewModel[] options = mapper.readValue(createDto.getOptions(), CreateQuestionOptionViewModel[].class);
+                for (CreateQuestionOptionViewModel option : options) {
+                    Option createdOption = new Option();
+                    createdOption.setText(option.getText());
+                    createdOption.setCorrect(option.isCorrect());
+                    createdOption.setQuestion(question);
+                    unitOfWork.getOptionRepository().save(createdOption);
+                }
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Failed to parse question options", e);
+            }
+        }
+
+        Question savedQuestion = questionRepository.save(question);
+
+        return savedQuestion;
     }
 
     @Transactional
@@ -114,5 +130,4 @@ public class QuestionService extends BaseService<Question> {
                 })
                 .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + id));
     }
-
 }

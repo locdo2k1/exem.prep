@@ -9,6 +9,15 @@ import java.util.UUID;
 
 public interface IFileStorageService {
     FileInfo uploadFile(MultipartFile file, String path) throws IOException;
+    
+    /**
+     * Uploads multiple files to the specified path
+     * @param files List of files to upload
+     * @param path Destination path where files should be stored
+     * @return List of FileInfo objects for the uploaded files
+     * @throws IOException if an I/O error occurs during file upload
+     */
+    List<FileInfo> uploadFiles(List<MultipartFile> files, String path) throws IOException;
     void deleteFile(UUID fileId) throws Exception;
     FileInfo getFileInfo(UUID fileId);
     List<FileInfo> getFilesByPath(String path);

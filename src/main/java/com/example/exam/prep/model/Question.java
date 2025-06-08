@@ -1,5 +1,6 @@
 package com.example.exam.prep.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,15 +13,18 @@ import java.util.Set;
 @Entity
 @Table(name = "questions")
 public class Question extends BaseEntity {
-    @ManyToOne
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_set_id", nullable = true)
     private QuestionSet questionSet;
 
-    @ManyToOne
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_type_id", nullable = false)
     private QuestionType questionType;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "category_id")
     private QuestionCategory category;
 
@@ -36,7 +40,8 @@ public class Question extends BaseEntity {
     @Column(name = "score")
     private Integer score;
 
-    @ManyToMany
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "question_answers",
         joinColumns = @JoinColumn(name = "question_id"),
@@ -44,13 +49,16 @@ public class Question extends BaseEntity {
     )
     private Set<QuestionOption> correctOptions;
 
-    @OneToMany(mappedBy = "question")
+    @JsonIgnore
+    @OneToMany(mappedBy = "question", fetch = FetchType.LAZY)
     private Set<FillBlankAnswer> fillBlankAnswers;
 
-    @ManyToMany(mappedBy = "questions")
+    @JsonIgnore
+    @ManyToMany(mappedBy = "questions", fetch = FetchType.LAZY)
     private Set<Test> tests = new HashSet<>();
 
-    @ManyToMany(mappedBy = "questions")
+    @JsonIgnore
+    @ManyToMany(mappedBy = "questions", fetch = FetchType.LAZY)
     private Set<TestPart> testParts = new HashSet<>();
 
     // Constructors

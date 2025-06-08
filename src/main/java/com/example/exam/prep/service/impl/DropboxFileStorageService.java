@@ -12,13 +12,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Service
@@ -26,7 +26,6 @@ public class DropboxFileStorageService implements IFileStorageService {
 
     private final DbxClientV2 dropboxClient;
     private final IUnitOfWork unitOfWork;
-    private static final long TEMP_LINK_DURATION = 4L * 60 * 60; // 4 hours in seconds
 
     public DropboxFileStorageService(
             @Value("${dropbox.access.token}") String dropboxAccessToken,
@@ -43,7 +42,9 @@ public class DropboxFileStorageService implements IFileStorageService {
             // Normalize path
             String normalizedPath = normalizePath(path);
             String fileName = file.getOriginalFilename();
-            String filePath = "/" + normalizedPath + "/" + fileName;
+            String filePath = String.format("/%s/%s",
+                normalizedPath, 
+                fileName).replaceAll("//+", "/");
 
             // Upload file to Dropbox
             try (InputStream in = file.getInputStream()) {
@@ -81,7 +82,7 @@ public class DropboxFileStorageService implements IFileStorageService {
         try {
             // Delete from Dropbox
             dropboxClient.files().deleteV2(fileInfo.getDropboxFileId());
-            
+
             // Delete from database
             unitOfWork.getFileInfoRepository().deleteById(fileId);
         } catch (DbxException e) {
@@ -93,6 +94,48 @@ public class DropboxFileStorageService implements IFileStorageService {
     public FileInfo getFileInfo(UUID fileId) {
         return unitOfWork.getFileInfoRepository().findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("File not found"));
+    }
+
+    @Override
+    @Transactional
+    public List<FileInfo> uploadFiles(List<MultipartFile> files, String path) throws IOException {
+        List<FileInfo> uploadedFiles = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            try {
+                // Normalize path
+                String normalizedPath = normalizePath(path);
+                String fileName = file.getOriginalFilename();
+                String filePath = String.format("/%s/%s",
+                    normalizedPath, 
+                    fileName).replaceAll("//+", "/");
+
+                // Upload file to Dropbox
+                try (InputStream in = file.getInputStream()) {
+                    FileMetadata metadata = dropboxClient.files().uploadBuilder(filePath)
+                            .withMode(WriteMode.OVERWRITE)
+                            .uploadAndFinish(in);
+
+                    // Save file info to database
+                    FileInfo fileInfo = new FileInfo();
+                    fileInfo.setFileName(fileName);
+                    fileInfo.setFilePath(metadata.getPathDisplay());
+                    fileInfo.setFileType(file.getContentType());
+                    fileInfo.setFileSize(metadata.getSize());
+                    fileInfo.setDropboxFileId(metadata.getId());
+                    fileInfo.setDropboxPathLower(metadata.getPathLower());
+                    fileInfo.setDropboxContentHash(metadata.getContentHash());
+                    fileInfo.setLastModified(convertToLocalDateTime(metadata.getServerModified()));
+                    unitOfWork.getFileInfoRepository().save(fileInfo);
+
+                    uploadedFiles.add(fileInfo);
+                }
+            } catch (DbxException e) {
+                throw new IOException("Failed to upload file to Dropbox", e);
+            }
+        }
+        
+        return uploadedFiles;
     }
 
     @Override
