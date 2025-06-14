@@ -3,6 +3,7 @@ package com.example.exam.prep.controller;
 import com.example.exam.prep.model.Question;
 import com.example.exam.prep.model.viewmodels.question.CreateQuestionViewModel;
 import com.example.exam.prep.model.viewmodels.question.QuestionViewModel;
+import com.example.exam.prep.model.viewmodels.question.UpdateQuestionViewModel;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.QuestionService;
 import org.springframework.data.domain.Page;
@@ -48,17 +49,20 @@ public class QuestionController {
         }
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Question>> updateQuestion(
             @PathVariable UUID id,
-            @RequestBody Question question) {
-        return questionService.findById(id)
-                .map(existingQuestion -> {
-                    question.setId(id);
-                    Question updatedQuestion = questionService.save(question);
-                    return ResponseEntity.ok(ApiResponse.success(updatedQuestion, QUESTION_UPDATED.getMessage()));
-                })
-                .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
+            @ModelAttribute UpdateQuestionViewModel question) {
+        try {
+            return questionService.findById(id)
+                    .map(existingQuestion -> {
+                        Question updatedQuestion = questionService.updateQuestion(id, question);
+                        return ResponseEntity.ok(ApiResponse.success(updatedQuestion, QUESTION_UPDATED.getMessage()));
+                    })
+                    .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid input data", 400));
+        }
     }
 
     @DeleteMapping("/{id}")

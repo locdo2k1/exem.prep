@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Table(name = "options")
 public class Option extends BaseEntity {
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(1000)")
     private String text; // The text of the option
 
     @ManyToOne
@@ -18,4 +18,3 @@ public class Option extends BaseEntity {
     @Column(nullable = false)
     private boolean correct; // Flag to indicate if this option is the correct answer
 }
-

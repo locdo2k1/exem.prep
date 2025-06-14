@@ -1,9 +1,11 @@
 package com.example.exam.prep.service;
 
+import com.example.exam.prep.constant.QuestionTypeConstant;
 import com.example.exam.prep.model.*;
 import com.example.exam.prep.model.viewmodels.option.CreateQuestionOptionViewModel;
 import com.example.exam.prep.model.viewmodels.question.CreateQuestionViewModel;
 import com.example.exam.prep.model.viewmodels.question.QuestionViewModel;
+import com.example.exam.prep.model.viewmodels.question.UpdateQuestionViewModel;
 import com.example.exam.prep.repository.IQuestionRepository;
 import com.example.exam.prep.repository.IQuestionTypeRepository;
 import com.example.exam.prep.repository.IQuestionCategoryRepository;
@@ -21,10 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class QuestionService {
@@ -68,6 +68,7 @@ public class QuestionService {
         question.setQuestionType(questionType);
         question.setPrompt(createDto.getPrompt());
         question.setScore(createDto.getScore());
+        unitOfWork.getQuestionRepository().save(question);
 
         // Handle category if provided
         if (createDto.getCategoryId() != null) {
@@ -133,12 +134,13 @@ public class QuestionService {
     }
 
     @Transactional
-    public Question updateQuestion(UUID id, CreateQuestionViewModel updateDto) {
+    public Question updateQuestion(UUID id, UpdateQuestionViewModel updateDto) {
         return questionRepository.findById(id)
                 .map(existingQuestion -> {
                     // Update only the fields that should be updated
+                    QuestionType questionType = null;
                     if (updateDto.getQuestionTypeId() != null) {
-                        QuestionType questionType = questionTypeRepository.findById(updateDto.getQuestionTypeId())
+                        questionType = questionTypeRepository.findById(updateDto.getQuestionTypeId())
                                 .orElseThrow(() -> new EntityNotFoundException("QuestionType not found with id: " + updateDto.getQuestionTypeId()));
                         existingQuestion.setQuestionType(questionType);
                     }
@@ -149,6 +151,98 @@ public class QuestionService {
                         existingQuestion.setCategory(category);
                     } else {
                         existingQuestion.setCategory(null);
+                    }
+
+                    // Handle file deletions
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    if (updateDto.getDeletedAudiosIds() != null && !updateDto.getDeletedAudiosIds().isEmpty()) {
+                        try {
+                            List<UUID> deletedIds = objectMapper.readValue(
+                                updateDto.getDeletedAudiosIds(),
+                                new TypeReference<List<UUID>>() {}
+                            );
+
+                            existingQuestion.getFileInfos().removeIf(fileInfo -> deletedIds.contains(fileInfo.getId()));
+                            deletedIds.forEach(fileId -> unitOfWork.getFileInfoRepository().deleteById(fileId));
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to parse or delete files: " + e.getMessage(), e);
+                        }
+                    }
+
+                    //Update prompt and score
+                    existingQuestion.setPrompt(updateDto.getPrompt());
+                    existingQuestion.setScore(updateDto.getScore());
+
+                    // Handle new file uploads
+                    if (updateDto.getAudios() != null && !updateDto.getAudios().isEmpty()) {
+                        try {
+                            String filePath = FileConstant.QUESTION_FILES.getStringValue();
+                            List<FileInfo> uploadedFiles = fileStorageService.uploadFiles(updateDto.getAudios(), filePath);
+
+                            // Associate new files with the question
+                            for (FileInfo fileInfo : uploadedFiles) {
+                                fileInfo.setQuestion(existingQuestion);
+                                unitOfWork.getFileInfoRepository().save(fileInfo);
+                            }
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to upload audio files", e);
+                        }
+                    }
+
+                    // Handle options if provided
+                    String multipleChoice = QuestionTypeConstant.MULTIPLE_CHOICE.toString();
+                    if (updateDto.getOptions() != null && !updateDto.getOptions().isEmpty() && questionType != null && questionType.getName().equals(multipleChoice)) {
+                        try {
+                            // Clear existing options
+                            existingQuestion.getOptions().forEach(option -> unitOfWork.getOptionRepository().delete(option));
+                            existingQuestion.getFillBlankAnswers().forEach(blankAnswer -> unitOfWork.getFillBlankAnswerRepository().delete(blankAnswer));
+                            existingQuestion.getOptions().clear();
+                            existingQuestion.getFillBlankAnswers().clear();
+
+                            // Parse and add new options
+                            CreateQuestionOptionViewModel[] options = objectMapper.readValue(
+                                updateDto.getOptions(), 
+                                CreateQuestionOptionViewModel[].class
+                            );
+                            
+                            for (CreateQuestionOptionViewModel optionDto : options) {
+                                Option option = new Option();
+                                option.setText(optionDto.getText());
+                                option.setCorrect(optionDto.isCorrect());
+                                option.setQuestion(existingQuestion);
+                                unitOfWork.getOptionRepository().save(option);
+                            }
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to parse options: " + e.getMessage(), e);
+                        }
+                    }
+
+                    // Handle blank answers if provided
+                    String fillInBlank = QuestionTypeConstant.FILL_IN_THE_BLANK.getDisplayName(); // "Fill in the Blank"
+
+                    if (updateDto.getBlankAnswers() != null && !updateDto.getBlankAnswers().isEmpty() && questionType != null && questionType.getName().equals(fillInBlank)) {
+                        try {
+                            // Clear existing blank answers
+                            existingQuestion.getFillBlankAnswers().forEach(blankAnswer -> unitOfWork.getFillBlankAnswerRepository().delete(blankAnswer));
+                            existingQuestion.getOptions().forEach(option -> unitOfWork.getOptionRepository().delete(option));
+                            existingQuestion.getOptions().clear();
+                            existingQuestion.getFillBlankAnswers().clear();
+
+                            // Parse and add new blank answers
+                            List<String> blankAnswers = objectMapper.readValue(
+                                updateDto.getBlankAnswers(), 
+                                new TypeReference<List<String>>() {}
+                            );
+                            
+                            for (String answerText : blankAnswers) {
+                                FillBlankAnswer blankAnswer = new FillBlankAnswer();
+                                blankAnswer.setAnswerText(answerText);
+                                blankAnswer.setQuestion(existingQuestion);
+                                unitOfWork.getFillBlankAnswerRepository().save(blankAnswer);
+                            }
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to parse blank answers: " + e.getMessage(), e);
+                        }
                     }
 
                     // Map other fields from DTO to entity

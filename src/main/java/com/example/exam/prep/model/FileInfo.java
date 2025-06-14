@@ -17,10 +17,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class FileInfo extends BaseEntity {
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "nvarchar(255)")
     private String fileName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "nvarchar(1000)")
     private String filePath;
 
     @Column(nullable = false)
