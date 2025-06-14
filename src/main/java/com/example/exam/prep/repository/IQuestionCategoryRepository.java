@@ -18,6 +18,12 @@ public interface IQuestionCategoryRepository extends GenericRepository<QuestionC
         @Param("name") String name,
         Pageable pageable
     );
+
+    @Query("SELECT c FROM QuestionCategory c WHERE c.name LIKE %:name%")
+    Page<QuestionCategory> findByNameContaining(
+            @Param("name") String name,
+            Pageable pageable
+    );
     
     @Query("SELECT q FROM QuestionCategory q WHERE LOWER(q.code) LIKE LOWER(CONCAT('%', :code, '%'))")
     Page<QuestionCategory> findByCodeContainingIgnoreCase(
