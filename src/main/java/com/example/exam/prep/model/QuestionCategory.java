@@ -1,6 +1,7 @@
 package com.example.exam.prep.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +27,7 @@ import java.util.Set;
 @Getter
 @Entity
 @Table(name = "question_categories")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class QuestionCategory extends BaseEntity {
     /**
      * Unique identifier code for the category.
@@ -51,8 +53,8 @@ public class QuestionCategory extends BaseEntity {
     /**
      * The set of questions belonging to this category.
      */
-    @OneToMany(fetch = FetchType.LAZY,mappedBy = "category")
-    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "category")
+    @JsonIgnoreProperties("category")
     private Set<Question> questions;
 
     // Constructors

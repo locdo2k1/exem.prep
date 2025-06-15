@@ -2,10 +2,10 @@ package com.example.exam.prep.service;
 
 import com.example.exam.prep.constant.QuestionTypeConstant;
 import com.example.exam.prep.model.*;
+import com.example.exam.prep.model.viewmodels.file.FileInfoViewModel;
 import com.example.exam.prep.model.viewmodels.option.CreateQuestionOptionViewModel;
-import com.example.exam.prep.model.viewmodels.question.CreateQuestionViewModel;
-import com.example.exam.prep.model.viewmodels.question.QuestionViewModel;
-import com.example.exam.prep.model.viewmodels.question.UpdateQuestionViewModel;
+import com.example.exam.prep.model.viewmodels.option.OptionViewModel;
+import com.example.exam.prep.model.viewmodels.question.*;
 import com.example.exam.prep.repository.IQuestionRepository;
 import com.example.exam.prep.repository.IQuestionTypeRepository;
 import com.example.exam.prep.repository.IQuestionCategoryRepository;
@@ -15,7 +15,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.persistence.EntityNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,8 +47,61 @@ public class QuestionService {
         this.unitOfWork = unitOfWork;
     }
 
-    public Page<Question> findAll(Pageable pageable) {
-        return questionRepository.findAll(pageable);
+    public Page<QuestionViewModel> findAll(Pageable pageable) {
+        Page<Question> questions = questionRepository.findAll(pageable);
+        return questions.map(question -> {
+            QuestionViewModel viewModel = new QuestionViewModel();
+            viewModel.setId(question.getId());
+            viewModel.setPrompt(question.getPrompt());
+
+            // Map category to view model
+            if (question.getCategory() != null) {
+                QuestionCategory category = question.getCategory();
+                QuestionCategoryViewModel categoryVM = new QuestionCategoryViewModel();
+                categoryVM.setId(category.getId());
+                categoryVM.setCode(category.getCode());
+                categoryVM.setName(category.getName());
+                categoryVM.setSkill(category.getSkill());
+                viewModel.setQuestionCategory(categoryVM);
+            }
+
+            // Map question type to view model
+            if (question.getQuestionType() != null) {
+                QuestionType questionType = question.getQuestionType();
+                QuestionTypeViewModel typeVM = new QuestionTypeViewModel();
+                typeVM.setId(questionType.getId());
+                typeVM.setName(questionType.getName());
+                typeVM.setDescription(questionType.getName());
+                viewModel.setQuestionType(typeVM);
+            }
+            viewModel.setScore(question.getScore() != null ? question.getScore() : 0);
+            viewModel.setQuestionAnswers(question.getFillBlankAnswers().stream()
+                    .map(FillBlankAnswer::getAnswerText)
+                    .collect(Collectors.toList()));
+            // Map options to view models
+            viewModel.setOptions(question.getOptions().stream()
+                    .map(option -> {
+                        OptionViewModel optionVM = new OptionViewModel();
+                        optionVM.setId(option.getId());
+                        optionVM.setText(option.getText());
+                        optionVM.setCorrect(option.isCorrect());
+                        return optionVM;
+                    })
+                    .collect(Collectors.toList()));
+            // Map file infos to view models
+            viewModel.setQuestionAudios(question.getFileInfos().stream()
+                    .map(fileInfo -> {
+                        FileInfoViewModel fileInfoVM = new FileInfoViewModel();
+                        fileInfoVM.setId(fileInfo.getId());
+                        fileInfoVM.setFileName(fileInfo.getFileName());
+                        fileInfoVM.setFileUrl(fileInfo.getUrl());
+                        fileInfoVM.setFileType(fileInfo.getFileType());
+                        fileInfoVM.setFileSize(fileInfo.getFileSize());
+                        return fileInfoVM;
+                    })
+                    .collect(Collectors.toList()));
+            return viewModel;
+        });
     }
 
     @Transactional
@@ -158,8 +210,9 @@ public class QuestionService {
                     if (updateDto.getDeletedAudiosIds() != null && !updateDto.getDeletedAudiosIds().isEmpty()) {
                         try {
                             List<UUID> deletedIds = objectMapper.readValue(
-                                updateDto.getDeletedAudiosIds(),
-                                new TypeReference<List<UUID>>() {}
+                                    updateDto.getDeletedAudiosIds(),
+                                    new TypeReference<List<UUID>>() {
+                                    }
                             );
 
                             existingQuestion.getFileInfos().removeIf(fileInfo -> deletedIds.contains(fileInfo.getId()));
@@ -201,10 +254,10 @@ public class QuestionService {
 
                             // Parse and add new options
                             CreateQuestionOptionViewModel[] options = objectMapper.readValue(
-                                updateDto.getOptions(), 
-                                CreateQuestionOptionViewModel[].class
+                                    updateDto.getOptions(),
+                                    CreateQuestionOptionViewModel[].class
                             );
-                            
+
                             for (CreateQuestionOptionViewModel optionDto : options) {
                                 Option option = new Option();
                                 option.setText(optionDto.getText());
@@ -230,10 +283,11 @@ public class QuestionService {
 
                             // Parse and add new blank answers
                             List<String> blankAnswers = objectMapper.readValue(
-                                updateDto.getBlankAnswers(), 
-                                new TypeReference<List<String>>() {}
+                                    updateDto.getBlankAnswers(),
+                                    new TypeReference<List<String>>() {
+                                    }
                             );
-                            
+
                             for (String answerText : blankAnswers) {
                                 FillBlankAnswer blankAnswer = new FillBlankAnswer();
                                 blankAnswer.setAnswerText(answerText);
@@ -257,15 +311,55 @@ public class QuestionService {
         return questionRepository.findWithDetailsById(id)
                 .map(question -> {
                     QuestionViewModel viewModel = new QuestionViewModel();
+                    viewModel.setId(question.getId());
                     viewModel.setPrompt(question.getPrompt());
-                    viewModel.setQuestionCategory(question.getCategory());
-                    viewModel.setQuestionType(question.getQuestionType());
-                    viewModel.setScore(question.getScore());
+
+                    // Map category to view model
+                    if (question.getCategory() != null) {
+                        QuestionCategory category = question.getCategory();
+                        QuestionCategoryViewModel categoryVM = new QuestionCategoryViewModel();
+                        categoryVM.setId(category.getId());
+                        categoryVM.setCode(category.getCode());
+                        categoryVM.setName(category.getName());
+                        categoryVM.setSkill(category.getSkill());
+                        viewModel.setQuestionCategory(categoryVM);
+                    }
+
+                    // Map question type to view model
+                    if (question.getQuestionType() != null) {
+                        QuestionType questionType = question.getQuestionType();
+                        QuestionTypeViewModel typeVM = new QuestionTypeViewModel();
+                        typeVM.setId(questionType.getId());
+                        typeVM.setName(questionType.getName());
+                        typeVM.setDescription(questionType.getName());
+                        viewModel.setQuestionType(typeVM);
+                    }
+                    viewModel.setScore(question.getScore() != null ? question.getScore() : 0);
                     viewModel.setQuestionAnswers(question.getFillBlankAnswers().stream()
                             .map(FillBlankAnswer::getAnswerText)
-                            .toList());
-                    viewModel.setOptions(question.getOptions().stream().toList());
-                    viewModel.setQuestionAudios(question.getFileInfos().stream().toList());
+                            .collect(Collectors.toList()));
+                    // Map options to view models
+                    viewModel.setOptions(question.getOptions().stream()
+                            .map(option -> {
+                                OptionViewModel optionVM = new OptionViewModel();
+                                optionVM.setId(option.getId());
+                                optionVM.setText(option.getText());
+                                optionVM.setCorrect(option.isCorrect());
+                                return optionVM;
+                            })
+                            .collect(Collectors.toList()));
+                    // Map file infos to view models
+            viewModel.setQuestionAudios(question.getFileInfos().stream()
+                    .map(fileInfo -> {
+                        FileInfoViewModel fileInfoVM = new FileInfoViewModel();
+                        fileInfoVM.setId(fileInfo.getId());
+                        fileInfoVM.setFileName(fileInfo.getFileName());
+                        fileInfoVM.setFileUrl(fileInfo.getUrl());
+                        fileInfoVM.setFileType(fileInfo.getFileType());
+                        fileInfoVM.setFileSize(fileInfo.getFileSize());
+                        return fileInfoVM;
+                    })
+                    .collect(Collectors.toList()));
                     return viewModel;
                 });
     }
