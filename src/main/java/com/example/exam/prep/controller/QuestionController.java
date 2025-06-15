@@ -26,8 +26,8 @@ public class QuestionController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<Question>>> getAllQuestions(Pageable pageable) {
-        Page<Question> questions = questionService.findAll(pageable);
+    public ResponseEntity<ApiResponse<Page<QuestionViewModel>>> getAllQuestions(Pageable pageable) {
+        Page<QuestionViewModel> questions = questionService.findAll(pageable);
         return ResponseEntity.ok(ApiResponse.success(questions, QUESTIONS_RETRIEVED.getMessage()));
     }
 

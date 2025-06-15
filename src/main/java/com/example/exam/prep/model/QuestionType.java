@@ -1,5 +1,6 @@
 package com.example.exam.prep.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +9,7 @@ import lombok.Setter;
 @Getter
 @Entity
 @Table(name = "question_types")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class QuestionType extends BaseEntity {
     @Column(name = "code", nullable = false, unique = true)
     private String code;
