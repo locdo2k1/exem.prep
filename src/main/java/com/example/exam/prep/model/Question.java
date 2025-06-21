@@ -31,6 +31,9 @@ public class Question extends BaseEntity {
     @Column(name = "clip_number")
     private Integer clipNumber;
 
+    @Column(name = "display_order")
+    private Integer order;
+
     @Column(name = "audio_url")
     private String audioUrl;
 

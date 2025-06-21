@@ -13,6 +13,9 @@ public class QuestionSet extends BaseEntity {
     @Column(name = "title")
     private String title;
 
+    @Column(name = "display_order")
+    private Integer order;
+
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
