@@ -47,8 +47,8 @@ public class QuestionService {
         this.unitOfWork = unitOfWork;
     }
 
-    public Page<QuestionViewModel> findAll(Pageable pageable) {
-        Page<Question> questions = questionRepository.findAll(pageable);
+    public Page<QuestionViewModel> findAll(QuestionFilter filter, Pageable pageable) {
+        Page<Question> questions = questionRepository.findAll(filter, pageable);
         return questions.map(question -> {
             QuestionViewModel viewModel = new QuestionViewModel();
             viewModel.setId(question.getId());

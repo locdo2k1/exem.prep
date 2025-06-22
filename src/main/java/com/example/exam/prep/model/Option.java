@@ -11,6 +11,9 @@ public class Option extends BaseEntity {
     @Column(nullable = false, columnDefinition = "NVARCHAR(1000)")
     private String text; // The text of the option
 
+    @Column(columnDefinition = "NVARCHAR(MAX)")
+    private String description;
+
     @ManyToOne
     @JoinColumn(name = "question_id")
     private Question question; // Reference back to the associated question

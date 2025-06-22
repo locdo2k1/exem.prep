@@ -2,15 +2,18 @@ package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.Question;
 import com.example.exam.prep.model.viewmodels.question.CreateQuestionViewModel;
+import com.example.exam.prep.model.viewmodels.question.QuestionFilter;
 import com.example.exam.prep.model.viewmodels.question.QuestionViewModel;
 import com.example.exam.prep.model.viewmodels.question.UpdateQuestionViewModel;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.QuestionService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.UUID;
 
 import static com.example.exam.prep.constant.response.QuestionResponseMessage.*;
@@ -18,16 +21,29 @@ import static com.example.exam.prep.constant.response.QuestionResponseMessage.*;
 @RestController
 @RequestMapping("/api/questions")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class QuestionController {
     private final QuestionService questionService;
 
-    public QuestionController(QuestionService questionService) {
-        this.questionService = questionService;
-    }
-
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<QuestionViewModel>>> getAllQuestions(Pageable pageable) {
-        Page<QuestionViewModel> questions = questionService.findAll(pageable);
+    public ResponseEntity<ApiResponse<Page<QuestionViewModel>>> getAllQuestions(
+            @RequestParam(required = false) UUID questionTypeId,
+            @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false) Integer minScore,
+            @RequestParam(required = false) Integer maxScore,
+            @RequestParam(required = false) Integer clipNumber,
+            @RequestParam(required = false) String prompt,
+            Pageable pageable) {
+        
+        QuestionFilter filter = new QuestionFilter();
+        filter.setQuestionTypeId(questionTypeId);
+        filter.setCategoryId(categoryId);
+        filter.setMinScore(minScore);
+        filter.setMaxScore(maxScore);
+        filter.setClipNumber(clipNumber);
+        filter.setPrompt(prompt);
+        
+        Page<QuestionViewModel> questions = questionService.findAll(filter, pageable);
         return ResponseEntity.ok(ApiResponse.success(questions, QUESTIONS_RETRIEVED.getMessage()));
     }
 
@@ -74,5 +90,4 @@ public class QuestionController {
                 })
                 .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
     }
-
 }
