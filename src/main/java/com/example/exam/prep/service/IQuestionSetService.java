@@ -1,0 +1,25 @@
+package com.example.exam.prep.service;
+
+import com.example.exam.prep.model.QuestionSet;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface IQuestionSetService {
+    
+    QuestionSet create(QuestionSet questionSet);
+    
+    QuestionSet update(QuestionSet questionSet);
+    
+    void delete(UUID id);
+    
+    QuestionSet findById(UUID id);
+    
+    List<QuestionSet> findAll();
+    
+    Page<QuestionSet> findAll(Pageable pageable);
+    
+    // Add any additional custom methods specific to QuestionSet here
+}

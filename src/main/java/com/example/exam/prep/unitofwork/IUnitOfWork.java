@@ -20,6 +20,8 @@ public interface IUnitOfWork {
     IQuestionResponseRepository getQuestionResponseRepository();
 
     IQuestionSetRepository getQuestionSetRepository();
+    
+    IQuestionSetItemRepository getQuestionSetItemRepository();
 
     IQuestionTypeRepository getQuestionTypeRepository();
 

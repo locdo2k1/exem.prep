@@ -2,110 +2,89 @@ package com.example.exam.prep.unitofwork;
 
 import com.example.exam.prep.repository.*;
 import jakarta.persistence.EntityManager;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+/**
+ * Centralized access to all repositories with lazy initialization.
+ */
 @Service
+@Lazy
 public class UnitOfWorkImpl implements IUnitOfWork {
-    @Autowired
-    private IUserRepository userRepository;
-    @Autowired
-    private IFillBlankAnswerRepository fillBlankAnswerRepository;
-    @Autowired
-    private IOptionRepository optionRepository;
-    @Autowired
-    private IPartRepository partRepository;
-    @Autowired
-    private IQuestionRepository questionRepository;
-    @Autowired
-    private IQuestionCategoryRepository questionCategoryRepository;
-    @Autowired
-    private IQuestionOptionRepository questionOptionRepository;
-    @Autowired
-    private IQuestionResponseRepository questionResponseRepository;
-    @Autowired
-    private IQuestionSetRepository questionSetRepository;
-    @Autowired
-    private IQuestionTypeRepository questionTypeRepository;
-    @Autowired
-    private ITestRepository testRepository;
-    @Autowired
-    private ITestAttemptRepository testAttemptRepository;
-    @Autowired
-    private ITestPartRepository testPartRepository;
-    @Autowired
-    private IFileInfoRepository fileInfoRepository;
+    // User related
+    @Lazy private final IUserRepository userRepository;
+    @Lazy private final IFileInfoRepository fileInfoRepository;
+    
+    // Question related
+    @Lazy private final IQuestionRepository questionRepository;
+    @Lazy private final IQuestionCategoryRepository questionCategoryRepository;
+    @Lazy private final IQuestionOptionRepository questionOptionRepository;
+    @Lazy private final IQuestionResponseRepository questionResponseRepository;
+    @Lazy private final IQuestionSetRepository questionSetRepository;
+    @Lazy private final IQuestionSetItemRepository questionSetItemRepository;
+    @Lazy private final IQuestionTypeRepository questionTypeRepository;
+    
+    // Test related
+    @Lazy private final ITestRepository testRepository;
+    @Lazy private final ITestAttemptRepository testAttemptRepository;
+    @Lazy private final ITestPartRepository testPartRepository;
+    
+    // Other repositories
+    @Lazy private final IFillBlankAnswerRepository fillBlankAnswerRepository;
+    @Lazy private final IOptionRepository optionRepository;
+    @Lazy private final IPartRepository partRepository;
+    
+    @Lazy private final EntityManager entityManager;
 
-    public UnitOfWorkImpl(EntityManager entityManager) {
+    public UnitOfWorkImpl(
+        IUserRepository userRepository,
+        IFileInfoRepository fileInfoRepository,
+        IQuestionRepository questionRepository,
+        IQuestionCategoryRepository questionCategoryRepository,
+        IQuestionOptionRepository questionOptionRepository,
+        IQuestionResponseRepository questionResponseRepository,
+        IQuestionSetRepository questionSetRepository,
+        IQuestionSetItemRepository questionSetItemRepository,
+        IQuestionTypeRepository questionTypeRepository,
+        ITestRepository testRepository,
+        ITestAttemptRepository testAttemptRepository,
+        ITestPartRepository testPartRepository,
+        IFillBlankAnswerRepository fillBlankAnswerRepository,
+        IOptionRepository optionRepository,
+        IPartRepository partRepository,
+        EntityManager entityManager
+    ) {
+        this.userRepository = userRepository;
+        this.fileInfoRepository = fileInfoRepository;
+        this.questionRepository = questionRepository;
+        this.questionCategoryRepository = questionCategoryRepository;
+        this.questionOptionRepository = questionOptionRepository;
+        this.questionResponseRepository = questionResponseRepository;
+        this.questionSetRepository = questionSetRepository;
+        this.questionSetItemRepository = questionSetItemRepository;
+        this.questionTypeRepository = questionTypeRepository;
+        this.testRepository = testRepository;
+        this.testAttemptRepository = testAttemptRepository;
+        this.testPartRepository = testPartRepository;
+        this.fillBlankAnswerRepository = fillBlankAnswerRepository;
+        this.optionRepository = optionRepository;
+        this.partRepository = partRepository;
+        this.entityManager = entityManager;
     }
 
-    @Override
-    public IUserRepository getUserRepository() {
-        return userRepository;
-    }
-
-    @Override
-    public IFillBlankAnswerRepository getFillBlankAnswerRepository() {
-        return fillBlankAnswerRepository;
-    }
-
-    @Override
-    public IOptionRepository getOptionRepository() {
-        return optionRepository;
-    }
-
-    @Override
-    public IPartRepository getPartRepository() {
-        return partRepository;
-    }
-
-    @Override
-    public IQuestionRepository getQuestionRepository() {
-        return questionRepository;
-    }
-
-    @Override
-    public IQuestionCategoryRepository getQuestionCategoryRepository() {
-        return questionCategoryRepository;
-    }
-
-    @Override
-    public IQuestionOptionRepository getQuestionOptionRepository() {
-        return questionOptionRepository;
-    }
-
-    @Override
-    public IQuestionResponseRepository getQuestionResponseRepository() {
-        return questionResponseRepository;
-    }
-
-    @Override
-    public IQuestionSetRepository getQuestionSetRepository() {
-        return questionSetRepository;
-    }
-
-    @Override
-    public IQuestionTypeRepository getQuestionTypeRepository() {
-        return questionTypeRepository;
-    }
-
-    @Override
-    public ITestRepository getTestRepository() {
-        return testRepository;
-    }
-
-    @Override
-    public ITestAttemptRepository getTestAttemptRepository() {
-        return testAttemptRepository;
-    }
-
-    @Override
-    public ITestPartRepository getTestPartRepository() {
-        return testPartRepository;
-    }
-
-    @Override
-    public IFileInfoRepository getFileInfoRepository() {
-        return fileInfoRepository;
-    }
+    @Override public IUserRepository getUserRepository() { return userRepository; }
+    @Override public IFileInfoRepository getFileInfoRepository() { return fileInfoRepository; }
+    @Override public IQuestionRepository getQuestionRepository() { return questionRepository; }
+    @Override public IQuestionCategoryRepository getQuestionCategoryRepository() { return questionCategoryRepository; }
+    @Override public IQuestionOptionRepository getQuestionOptionRepository() { return questionOptionRepository; }
+    @Override public IQuestionResponseRepository getQuestionResponseRepository() { return questionResponseRepository; }
+    @Override public IQuestionSetRepository getQuestionSetRepository() { return questionSetRepository; }
+    @Override public IQuestionSetItemRepository getQuestionSetItemRepository() { return questionSetItemRepository; }
+    @Override public IQuestionTypeRepository getQuestionTypeRepository() { return questionTypeRepository; }
+    @Override public ITestRepository getTestRepository() { return testRepository; }
+    @Override public ITestAttemptRepository getTestAttemptRepository() { return testAttemptRepository; }
+    @Override public ITestPartRepository getTestPartRepository() { return testPartRepository; }
+    @Override public IFillBlankAnswerRepository getFillBlankAnswerRepository() { return fillBlankAnswerRepository; }
+    @Override public IOptionRepository getOptionRepository() { return optionRepository; }
+    @Override public IPartRepository getPartRepository() { return partRepository; }
 }
