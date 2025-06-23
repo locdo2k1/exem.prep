@@ -14,15 +14,13 @@ import java.util.Set;
 @Table(name = "questions")
 public class Question extends BaseEntity {
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_set_id", nullable = true)
-    private QuestionSet questionSet;
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<QuestionSetItem> questionSetItems = new HashSet<>();
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_type_id", nullable = false)
     private QuestionType questionType;
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
@@ -66,14 +64,12 @@ public class Question extends BaseEntity {
     // Constructors
     public Question() {}
 
-    public Question(QuestionSet questionSet, QuestionType questionType, String prompt) {
-        this.questionSet = questionSet;
+    public Question(QuestionType questionType, String prompt) {
         this.questionType = questionType;
         this.prompt = prompt;
     }
 
-    public Question(QuestionSet questionSet, QuestionType questionType, String prompt, QuestionCategory category) {
-        this.questionSet = questionSet;
+    public Question(QuestionType questionType, String prompt, QuestionCategory category) {
         this.questionType = questionType;
         this.prompt = prompt;
         this.category = category;

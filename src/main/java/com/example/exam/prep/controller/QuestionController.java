@@ -10,6 +10,7 @@ import com.example.exam.prep.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,7 +52,8 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<QuestionViewModel>> getQuestionById(@PathVariable UUID id) {
         return questionService.findById(id)
                 .map(question -> ResponseEntity.ok(ApiResponse.success(question, QUESTION_RETRIEVED.getMessage())))
-                .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(QUESTION_NOT_FOUND.getMessage(), HttpStatus.NOT_FOUND.value())));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -69,16 +71,13 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<Question>> updateQuestion(
             @PathVariable UUID id,
             @ModelAttribute UpdateQuestionViewModel question) {
-        try {
-            return questionService.findById(id)
-                    .map(existingQuestion -> {
-                        Question updatedQuestion = questionService.updateQuestion(id, question);
-                        return ResponseEntity.ok(ApiResponse.success(updatedQuestion, QUESTION_UPDATED.getMessage()));
-                    })
-                    .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid input data", 400));
-        }
+        return questionService.findById(id)
+                .map(existingQuestion -> {
+                    Question updatedQuestion = questionService.updateQuestion(id, question);
+                    return ResponseEntity.ok(ApiResponse.success(updatedQuestion, QUESTION_UPDATED.getMessage()));
+                })
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(QUESTION_NOT_FOUND.getMessage(), HttpStatus.NOT_FOUND.value())));
     }
 
     @DeleteMapping("/{id}")
@@ -88,6 +87,7 @@ public class QuestionController {
                     questionService.deleteById(id);
                     return ResponseEntity.ok(ApiResponse.<Void>success(null, QUESTION_DELETED.getMessage()));
                 })
-                .orElse(ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404)));
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(QUESTION_NOT_FOUND.getMessage(), HttpStatus.NOT_FOUND.value())));
     }
 }

@@ -3,6 +3,7 @@ package com.example.exam.prep.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.HashSet;
 import java.util.Set;
 
 @Setter
@@ -22,11 +23,8 @@ public class QuestionSet extends BaseEntity {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @OneToMany(mappedBy = "questionSet")
-    private Set<Question> questions;
-
-    @OneToMany(mappedBy = "questionSet")
-    private Set<QuestionOption> options;
+    @OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<QuestionSetItem> questionSetItems = new HashSet<>();
 
     @ManyToMany(mappedBy = "questionSets")
     private Set<Test> tests;

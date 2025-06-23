@@ -6,6 +6,7 @@ import com.example.exam.prep.service.IUserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -32,7 +33,8 @@ public class UserController {
         if (user != null) {
             return ResponseEntity.ok(ApiResponse.success(user, USER_RETRIEVED.getMessage()));
         }
-        return ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(getNotFoundMessage(), HttpStatus.NOT_FOUND.value()));
     }
 
     @PostMapping
@@ -42,39 +44,43 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success(user, USER_CREATED.getMessage()));
         }
-        return ResponseEntity.badRequest()
-                .body(ApiResponse.error(USER_CREATE_FAILED.getMessage(), 400));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(USER_CREATE_FAILED.getMessage(), HttpStatus.BAD_REQUEST.value()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable UUID id, @RequestBody User user) {
         User existingUser = userService.getUser(id);
         if (existingUser == null) {
-            return ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(getNotFoundMessage(), HttpStatus.NOT_FOUND.value()));
         }
 
         user.setId(id);
         boolean isSuccess = userService.saveUser(user);
         if (isSuccess) {
-            return ResponseEntity.ok(ApiResponse.success(user, USER_UPDATED.getMessage()));
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.success(user, USER_UPDATED.getMessage()));
         }
-        return ResponseEntity.badRequest()
-                .body(ApiResponse.error(USER_UPDATE_FAILED.getMessage(), 400));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(USER_UPDATE_FAILED.getMessage(), HttpStatus.BAD_REQUEST.value()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable UUID id) {
         User existingUser = userService.getUser(id);
         if (existingUser == null) {
-            return ResponseEntity.ok(ApiResponse.error(getNotFoundMessage(), 404));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(getNotFoundMessage(), HttpStatus.NOT_FOUND.value()));
         }
 
         try {
             userService.deleteUser(id);
-            return ResponseEntity.ok(ApiResponse.<Void>success(null, USER_DELETED.getMessage()));
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.<Void>success(null, USER_DELETED.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(USER_DELETE_FAILED.getMessage(), 400));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(USER_DELETE_FAILED.getMessage(), HttpStatus.BAD_REQUEST.value()));
         }
     }
 }
