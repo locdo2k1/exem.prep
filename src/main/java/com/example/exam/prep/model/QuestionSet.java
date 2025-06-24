@@ -26,6 +26,9 @@ public class QuestionSet extends BaseEntity {
     @OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<QuestionSetItem> questionSetItems = new HashSet<>();
 
+    @OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<QuestionSetFile> files = new HashSet<>();
+
     @ManyToMany(mappedBy = "questionSets")
     private Set<Test> tests;
 

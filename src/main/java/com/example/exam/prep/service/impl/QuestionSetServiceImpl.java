@@ -58,4 +58,9 @@ public class QuestionSetServiceImpl implements IQuestionSetService {
     public Page<QuestionSet> findAll(Pageable pageable) {
         return unitOfWork.getQuestionSetRepository().findAll(pageable);
     }
+
+    @Override
+    public Page<QuestionSet> findByTitleContaining(String title, Pageable pageable) {
+        return unitOfWork.getQuestionSetRepository().findByTitleContainingIgnoreCaseAndIsDeletedFalse(title, pageable);
+    }
 }

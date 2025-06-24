@@ -21,5 +21,7 @@ public interface IQuestionSetService {
     
     Page<QuestionSet> findAll(Pageable pageable);
     
+    Page<QuestionSet> findByTitleContaining(String title, Pageable pageable);
+    
     // Add any additional custom methods specific to QuestionSet here
 }
