@@ -28,15 +28,28 @@ public class FileController {
         this.fileDownloadService = fileDownloadService;
     }
 
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+
     @PostMapping("/upload")
-    public ResponseEntity<FileInfo> uploadFile(
+    public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "path", defaultValue = "") String path) {
+        
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("File is empty");
+        }
+        
+        if (file.getSize() > MAX_FILE_SIZE) {
+            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                    .body("File size exceeds the maximum limit of 10MB");
+        }
+        
         try {
             FileInfo fileInfo = fileStorageService.uploadFile(file, path);
             return ResponseEntity.status(HttpStatus.CREATED).body(fileInfo);
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to upload file: " + e.getMessage());
         }
     }
 

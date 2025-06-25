@@ -30,5 +30,5 @@ public interface IQuestionSetRepository extends JpaRepository<QuestionSet, UUID>
     List<QuestionSet> findByQuestionId(@Param("questionId") UUID questionId);
     
     @Query("SELECT qs FROM QuestionSet qs WHERE LOWER(qs.title) LIKE LOWER(CONCAT('%', :title, '%')) AND qs.isDeleted = false")
-    Page<QuestionSet> findByTitleContainingIgnoreCaseAndIsDeletedFalse(@Param("title") String title, Pageable pageable);
+    Page<QuestionSet> findAllByTitleContaining(@Param("title") String title, Pageable pageable);
 }

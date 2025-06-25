@@ -1,16 +1,15 @@
 package com.example.exam.prep;
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class SampleTest {
+class ApplicationTests {
 
     @Test
-    void testSampleTest(String expected) {
-        // Test case 1: Sample test case
-        String actual = "Hello, World!";
-        assert actual.equals(expected) : "Expected 'Hello, World!' but got '" + actual + "'";
-        System.out.println("Running sample test case");
+    void contextLoads() {
+        // Simple test to verify the application context loads
+        assertTrue(true, "The application context should have loaded");
     }
 }
