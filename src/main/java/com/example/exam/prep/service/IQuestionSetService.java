@@ -3,6 +3,7 @@ package com.example.exam.prep.service;
 import com.example.exam.prep.model.QuestionSet;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.example.exam.prep.model.viewmodels.questionset.QuestionSetCreateVM;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +23,8 @@ public interface IQuestionSetService {
     Page<QuestionSet> findAll(Pageable pageable);
     
     Page<QuestionSet> findByTitleContaining(String title, Pageable pageable);
+    
+    QuestionSet createQuestionSet(QuestionSetCreateVM questionSetVM);
     
     // Add any additional custom methods specific to QuestionSet here
 }

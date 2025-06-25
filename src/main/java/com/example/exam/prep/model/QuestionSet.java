@@ -1,5 +1,6 @@
 package com.example.exam.prep.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,17 +24,21 @@ public class QuestionSet extends BaseEntity {
     @Column(name = "image_url")
     private String imageUrl;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<QuestionSetItem> questionSetItems = new HashSet<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<QuestionSetFile> files = new HashSet<>();
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "questionSets")
-    private Set<Test> tests;
+    private Set<Test> tests = new HashSet<>();
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "questionSets")
-    private Set<TestPart> testParts;
+    private Set<TestPart> testParts = new HashSet<>();
 
     // Constructors
     public QuestionSet() {}
