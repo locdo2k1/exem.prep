@@ -1,6 +1,7 @@
 package com.example.exam.prep.service;
 
 import com.example.exam.prep.model.QuestionSet;
+import com.example.exam.prep.model.viewmodels.questionset.QuestionSetVM;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.example.exam.prep.model.viewmodels.questionset.QuestionSetCreateVM;
@@ -25,6 +26,11 @@ public interface IQuestionSetService {
     Page<QuestionSet> findByTitleContaining(String title, Pageable pageable);
     
     QuestionSet createQuestionSet(QuestionSetCreateVM questionSetVM);
+    
+    // New methods that return VM objects
+    Page<QuestionSetVM> findAllQuestionSetVMs(Pageable pageable);
+    
+    Page<QuestionSetVM> findQuestionSetVMsByTitleContaining(String title, Pageable pageable);
     
     // Add any additional custom methods specific to QuestionSet here
 }
