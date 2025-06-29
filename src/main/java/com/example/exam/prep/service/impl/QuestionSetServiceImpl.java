@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
+import com.example.exam.prep.model.viewmodels.questionset.QuestionSetVM;
 import java.util.Set;
 import java.util.UUID;
 
@@ -70,6 +71,38 @@ public class QuestionSetServiceImpl implements IQuestionSetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<QuestionSetVM> findAllQuestionSetVMs(Pageable pageable) {
+        Page<QuestionSet> questionSets = unitOfWork.getQuestionSetRepository().findAllByIsDeletedFalse(pageable);
+        return questionSets.map(questionSet -> {
+            QuestionSetVM vm = new QuestionSetVM();
+            vm.setId(questionSet.getId());
+            vm.setTitle(questionSet.getTitle());
+            vm.setDescription(questionSet.getDescription());
+            vm.setImageUrl(questionSet.getImageUrl());
+            vm.setOrder(questionSet.getOrder());
+            // The questions list will be populated by the fromEntity method
+            return QuestionSetVM.fromEntity(questionSet);
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<QuestionSetVM> findQuestionSetVMsByTitleContaining(String title, Pageable pageable) {
+        Page<QuestionSet> questionSets = unitOfWork.getQuestionSetRepository().findAllByTitleContaining(title, pageable);
+        return questionSets.map(questionSet -> {
+            QuestionSetVM vm = new QuestionSetVM();
+            vm.setId(questionSet.getId());
+            vm.setTitle(questionSet.getTitle());
+            vm.setDescription(questionSet.getDescription());
+            vm.setImageUrl(questionSet.getImageUrl());
+            vm.setOrder(questionSet.getOrder());
+            // The questions list will be populated by the fromEntity method
+            return QuestionSetVM.fromEntity(questionSet);
+        });
+    }
+
+    @Override
     @Transactional
     public QuestionSet createQuestionSet(QuestionSetCreateVM questionSetVM) {
         // Create new QuestionSet from VM
@@ -84,31 +117,30 @@ public class QuestionSetServiceImpl implements IQuestionSetService {
             // For example: process and save files, then set file paths to the questionSet
         }
         
-        // Handle question associations through QuestionSetItem
-        try {
+        // Save the question set first to generate an ID
+        QuestionSet savedQuestionSet = unitOfWork.getQuestionSetRepository().save(questionSet);
+        
+        // Handle question set items if any
+        if (questionSetVM.getQuestionIds() != null && !questionSetVM.getQuestionIds().isEmpty()) {
+            Set<QuestionSetItem> questionSetItems = new HashSet<>();
+            // Convert questionIds to a list for iteration
             List<UUID> questionIds = questionSetVM.getQuestionIdsAsList();
-            if (!questionIds.isEmpty()) {
-                List<Question> questions = unitOfWork.getQuestionRepository().findAllById(questionIds);
-                if (questions.size() != questionIds.size()) {
-                    throw new IllegalArgumentException("One or more question IDs are invalid");
-                }
+            for (UUID questionId : questionIds) {
+                Question question = unitOfWork.getQuestionRepository().findById(questionId)
+                        .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
                 
-                // Create QuestionSetItem for each question
-                Set<QuestionSetItem> questionSetItems = new HashSet<>();
-                for (Question question : questions) {
-                    QuestionSetItem item = new QuestionSetItem();
-                    item.setQuestion(question);
-                    item.setQuestionSet(questionSet);
-                    item.setOrder(questionSetItems.size() + 1); // Set order based on position in the list
-                    questionSetItems.add(item);
-                }
-                questionSet.setQuestionSetItems(questionSetItems);
+                QuestionSetItem item = new QuestionSetItem();
+                item.setQuestion(question);
+                item.setQuestionSet(savedQuestionSet);
+                item.setOrder(questionSetItems.size() + 1); // Set order based on position in the list
+                questionSetItems.add(item);
             }
+            savedQuestionSet.setQuestionSetItems(questionSetItems);
             
-            return unitOfWork.getQuestionSetRepository().save(questionSet);
-            
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid question IDs: " + e.getMessage());
+            // Update to save the relationships
+            return unitOfWork.getQuestionSetRepository().save(savedQuestionSet);
         }
+        
+        return savedQuestionSet;
     }
 }

@@ -3,6 +3,7 @@ package com.example.exam.prep.controller;
 import com.example.exam.prep.constant.response.QuestionSetResponseMessage;
 import com.example.exam.prep.model.QuestionSet;
 import com.example.exam.prep.model.viewmodels.questionset.QuestionSetCreateVM;
+import com.example.exam.prep.model.viewmodels.questionset.QuestionSetVM;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.IQuestionSetService;
 import jakarta.validation.Valid;
@@ -15,9 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -29,7 +27,7 @@ public class QuestionSetController {
     private final IQuestionSetService questionSetService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<QuestionSet>>> getAllQuestionSets(
+    public ResponseEntity<ApiResponse<Page<QuestionSetVM>>> getAllQuestionSets(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "title") String sort,
@@ -45,12 +43,12 @@ public class QuestionSetController {
                 Math.max(1, size),
                 Sort.by(sortDirection, sort));
 
-        Page<QuestionSet> questionSets = (search != null && !search.trim().isEmpty())
-                ? questionSetService.findByTitleContaining(search.trim(), pageable)
-                : questionSetService.findAll(pageable);
+        Page<QuestionSetVM> questionSetVMs = (search != null && !search.trim().isEmpty())
+                ? questionSetService.findQuestionSetVMsByTitleContaining(search.trim(), pageable)
+                : questionSetService.findAllQuestionSetVMs(pageable);
 
         return ResponseEntity.ok(
-                ApiResponse.success(questionSets, QuestionSetResponseMessage.QUESTION_SETS_RETRIEVED.getMessage()));
+                ApiResponse.success(questionSetVMs, QuestionSetResponseMessage.QUESTION_SETS_RETRIEVED.getMessage()));
     }
 
     @GetMapping("/{id}")
