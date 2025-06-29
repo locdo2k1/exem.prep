@@ -7,12 +7,8 @@ import com.example.exam.prep.model.viewmodels.question.QuestionCategoryViewModel
 import com.example.exam.prep.model.viewmodels.question.QuestionTypeViewModel;
 import com.example.exam.prep.model.viewmodels.option.OptionViewModel;
 import com.example.exam.prep.model.viewmodels.file.FileInfoViewModel;
-import com.example.exam.prep.model.Option;
-import com.example.exam.prep.model.FileInfo;
 import com.example.exam.prep.model.FillBlankAnswer;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
