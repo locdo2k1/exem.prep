@@ -20,6 +20,9 @@ public class Test extends BaseEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "skill")
+    private String skill;
+
     @OneToMany(mappedBy = "test", cascade = CascadeType.ALL)
     private Set<TestPart> testParts;
 
