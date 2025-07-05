@@ -32,4 +32,16 @@ public interface IUnitOfWork {
     ITestPartRepository getTestPartRepository();
 
     IFileInfoRepository getFileInfoRepository();
+
+    ITestFileRepository getTestFileRepository();
+    
+    ISkillRepository getSkillRepository();
+    
+    ITestSkillRepository getTestSkillRepository();
+    
+    ITestCategoryRepository getTestCategoryRepository();
+    
+    ITestQuestionDetailRepository getTestQuestionDetailRepository();
+    
+    ITestQuestionSetDetailRepository getTestQuestionSetDetailRepository();
 }

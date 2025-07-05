@@ -3,6 +3,8 @@ package com.example.exam.prep.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.HashSet;
 import java.util.Set;
 
 @Setter
@@ -27,7 +29,7 @@ public class TestPart extends BaseEntity {
         joinColumns = @JoinColumn(name = "test_part_id"),
         inverseJoinColumns = @JoinColumn(name = "question_id")
     )
-    private Set<Question> questions;
+    private Set<Question> questions = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -35,7 +37,7 @@ public class TestPart extends BaseEntity {
         joinColumns = @JoinColumn(name = "test_part_id"),
         inverseJoinColumns = @JoinColumn(name = "question_set_id")
     )
-    private Set<QuestionSet> questionSets;
+    private Set<QuestionSet> questionSets = new HashSet<>();
 
     // Constructors
     public TestPart() {}

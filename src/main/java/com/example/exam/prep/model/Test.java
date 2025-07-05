@@ -3,7 +3,6 @@ package com.example.exam.prep.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 import java.util.Set;
 
 @Setter
@@ -17,27 +16,24 @@ public class Test extends BaseEntity {
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "skill")
+    private String skill;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "test_category_id")
+    private TestCategory testCategory;
 
     @OneToMany(mappedBy = "test", cascade = CascadeType.ALL)
     private Set<TestPart> testParts;
 
-    @ManyToMany
-    @JoinTable(
-        name = "test_questions",
-        joinColumns = @JoinColumn(name = "test_id"),
-        inverseJoinColumns = @JoinColumn(name = "question_id")
-    )
-    private Set<Question> questions;
+    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestFile> testFiles = new java.util.HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-        name = "test_question_sets",
-        joinColumns = @JoinColumn(name = "test_id"),
-        inverseJoinColumns = @JoinColumn(name = "question_set_id")
-    )
-    private Set<QuestionSet> questionSets;
+    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestQuestionDetail> testQuestionDetails = new java.util.HashSet<>();
+
+    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestQuestionSetDetail> testQuestionSetDetails = new java.util.HashSet<>();
 
     // Constructors
     public Test() {}
@@ -45,6 +41,5 @@ public class Test extends BaseEntity {
     public Test(String name, String description) {
         this.name = name;
         this.description = description;
-        this.createdAt = LocalDateTime.now();
     }
 }

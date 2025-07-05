@@ -33,8 +33,8 @@ public class QuestionSet extends BaseEntity {
     private Set<QuestionSetFile> files = new HashSet<>();
 
     @JsonIgnore
-    @ManyToMany(mappedBy = "questionSets")
-    private Set<Test> tests = new HashSet<>();
+    @OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestQuestionSetDetail> testQuestionSetDetails = new HashSet<>();
 
     @JsonIgnore
     @ManyToMany(mappedBy = "questionSets")

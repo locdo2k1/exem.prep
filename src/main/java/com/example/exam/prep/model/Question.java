@@ -50,8 +50,8 @@ public class Question extends BaseEntity {
     private Set<FillBlankAnswer> fillBlankAnswers;
 
     @JsonIgnore
-    @ManyToMany(mappedBy = "questions", fetch = FetchType.LAZY)
-    private Set<Test> tests = new HashSet<>();
+    @OneToMany(mappedBy = "question", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestQuestionDetail> testQuestionDetails = new HashSet<>();
 
     @JsonIgnore
     @ManyToMany(mappedBy = "questions", fetch = FetchType.LAZY)
