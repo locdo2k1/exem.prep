@@ -4,6 +4,7 @@ import com.example.exam.prep.model.Question;
 import com.example.exam.prep.model.QuestionSet;
 import com.example.exam.prep.model.QuestionSetItem;
 import com.example.exam.prep.model.viewmodels.questionset.QuestionSetCreateVM;
+import com.example.exam.prep.model.viewmodels.questionset.QuestionSetUpdateVM;
 import com.example.exam.prep.service.IQuestionSetService;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
 import jakarta.persistence.EntityNotFoundException;
@@ -49,9 +50,10 @@ public class QuestionSetServiceImpl implements IQuestionSetService {
     }
 
     @Override
-    public QuestionSet findById(UUID id) {
-        return unitOfWork.getQuestionSetRepository().findById(id)
+    public QuestionSetVM findById(UUID id) {
+        QuestionSet questionSet = unitOfWork.getQuestionSetRepository().findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("QuestionSet not found with id: " + id));
+        return QuestionSetVM.fromEntity(questionSet);
     }
 
     @Override
@@ -90,16 +92,51 @@ public class QuestionSetServiceImpl implements IQuestionSetService {
     @Transactional(readOnly = true)
     public Page<QuestionSetVM> findQuestionSetVMsByTitleContaining(String title, Pageable pageable) {
         Page<QuestionSet> questionSets = unitOfWork.getQuestionSetRepository().findAllByTitleContaining(title, pageable);
-        return questionSets.map(questionSet -> {
-            QuestionSetVM vm = new QuestionSetVM();
-            vm.setId(questionSet.getId());
-            vm.setTitle(questionSet.getTitle());
-            vm.setDescription(questionSet.getDescription());
-            vm.setImageUrl(questionSet.getImageUrl());
-            vm.setOrder(questionSet.getOrder());
-            // The questions list will be populated by the fromEntity method
-            return QuestionSetVM.fromEntity(questionSet);
-        });
+        return questionSets.map(QuestionSetVM::fromEntity);
+    }
+
+    @Override
+    @Transactional
+    public QuestionSet updateQuestionSet(QuestionSetUpdateVM questionSetVM) {
+        // Find existing question set
+        QuestionSet existingQuestionSet = unitOfWork.getQuestionSetRepository().findById(questionSetVM.getId())
+                .orElseThrow(() -> new EntityNotFoundException("QuestionSet not found with id: " + questionSetVM.getId()));
+        
+        // Update fields from VM
+        existingQuestionSet.setTitle(questionSetVM.getTitle());
+        existingQuestionSet.setDescription(questionSetVM.getDescription());
+        existingQuestionSet.setOrder(questionSetVM.getOrder());
+        
+        // Handle file uploads if any
+        if (questionSetVM.getAudioFiles() != null && !questionSetVM.getAudioFiles().isEmpty()) {
+            // Add your file handling logic here
+            // For example: process and save files, then set file paths to the questionSet
+        }
+        
+        // Handle question set items if questionIds is provided
+        if (questionSetVM.getQuestionIds() != null && !questionSetVM.getQuestionIds().isEmpty()) {
+            // Clear existing items to replace with new ones
+            existingQuestionSet.getQuestionSetItems().clear();
+            
+            // Convert questionIds to a list for iteration
+            List<UUID> questionIds = questionSetVM.getQuestionIdsAsList();
+            int order = 1;
+            
+            for (UUID questionId : questionIds) {
+                Question question = unitOfWork.getQuestionRepository().findById(questionId)
+                        .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
+                
+                QuestionSetItem item = new QuestionSetItem();
+                item.setQuestion(question);
+                item.setQuestionSet(existingQuestionSet);
+                item.setOrder(order++);
+                
+                existingQuestionSet.getQuestionSetItems().add(item);
+            }
+        }
+        
+        // Save and return the updated question set
+        return unitOfWork.getQuestionSetRepository().save(existingQuestionSet);
     }
 
     @Override

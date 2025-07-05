@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,7 +16,23 @@ import java.util.UUID;
 @Repository
 public interface IQuestionSetRepository extends JpaRepository<QuestionSet, UUID> {
     
-    Optional<QuestionSet> findByIdAndIsDeletedFalse(UUID id);
+    @Override
+    @EntityGraph(attributePaths = {
+        "questionSetItems",
+        "questionSetItems.question",
+        "questionSetItems.question.options",
+        "questionSetItems.question.fillBlankAnswers"
+    })
+    Optional<QuestionSet> findById(UUID id);
+    
+    @EntityGraph(attributePaths = {
+        "questionSetItems",
+        "questionSetItems.question",
+        "questionSetItems.question.options",
+        "questionSetItems.question.fillBlankAnswers"
+    })
+    @Query("SELECT qs FROM QuestionSet qs WHERE qs.id = :id AND qs.isDeleted = false")
+    Optional<QuestionSet> findByIdAndIsDeletedFalse(@Param("id") UUID id);
     
     @EntityGraph(attributePaths = {
         "questionSetItems",
