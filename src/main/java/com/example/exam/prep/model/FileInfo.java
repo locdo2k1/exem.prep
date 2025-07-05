@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "file_info")
@@ -28,6 +29,10 @@ public class FileInfo extends BaseEntity {
 
     @Column(nullable = false)
     private Long fileSize;
+
+    @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Set<TestFile> testFiles = new java.util.HashSet<>();
 
     @Column(name = "dropbox_file_id")
     private String dropboxFileId;

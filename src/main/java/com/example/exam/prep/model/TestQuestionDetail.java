@@ -7,15 +7,11 @@ import lombok.Setter;
 @Setter
 @Getter
 @Entity
-@Table(name = "test_details")
-public class TestDetail extends BaseEntity {
+@Table(name = "test_question_details")
+public class TestQuestionDetail extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "test_id", nullable = false)
     private Test test;
-
-    @ManyToOne
-    @JoinColumn(name = "question_set_id", nullable = false)
-    private QuestionSet questionSet;
 
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false)
