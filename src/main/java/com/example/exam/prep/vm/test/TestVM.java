@@ -12,9 +12,8 @@ import java.util.UUID;
 public class TestVM {
     private UUID id;
     private String title;
-    private List<TestPartVM> listPart;
-    private List<TestQuestionSetVM> listQuestionSet;
-    private List<TestQuestionVM> listQuestion;
+    private List<TestPartDetailVM> listPart;
+    private List<TestQuestionItemVM> listQuestionItem;
     private List<TestSkillVM> listSkill;   
     private TestCategoryVM testCategory;
     private boolean isActive;
