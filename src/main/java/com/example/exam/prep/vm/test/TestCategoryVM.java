@@ -1,0 +1,24 @@
+package com.example.exam.prep.vm.test;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+/**
+ * View model for Test Category responses.
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class TestCategoryVM {
+    private UUID id;
+    private String name;
+    private String description;
+    private boolean isActive;
+}

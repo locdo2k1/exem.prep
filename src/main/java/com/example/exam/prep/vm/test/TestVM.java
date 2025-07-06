@@ -1,21 +1,22 @@
 package com.example.exam.prep.vm.test;
 
 import com.example.exam.prep.model.Test;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.List;
 import java.util.UUID;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 public class TestVM {
     private UUID id;
-    private String name;
-    private String description;
-    private UUID testCategoryId;
-    private String testCategoryName;
+    private String title;
+    private List<TestPartVM> listPart;
+    private List<TestQuestionSetVM> listQuestionSet;
+    private List<TestQuestionVM> listQuestion;
+    private List<TestSkillVM> listSkill;   
+    private TestCategoryVM testCategory;
     private boolean isActive;
 
     public static TestVM fromEntity(Test test) {
@@ -25,14 +26,16 @@ public class TestVM {
         
         TestVM vm = new TestVM();
         vm.setId(test.getId());
-        vm.setName(test.getName());
-        vm.setDescription(test.getDescription());
+        vm.setTitle(test.getName());
         
         if (test.getTestCategory() != null) {
-            vm.setTestCategoryId(test.getTestCategory().getId());
-            vm.setTestCategoryName(test.getTestCategory().getName());
+            TestCategoryVM categoryVM = TestCategoryVM.builder()
+                    .id(test.getTestCategory().getId())
+                    .name(test.getTestCategory().getName())
+                    .build();
+            vm.setTestCategory(categoryVM);
         }
-        
+    
         return vm;
     }
 }
