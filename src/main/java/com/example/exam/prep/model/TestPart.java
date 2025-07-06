@@ -23,21 +23,11 @@ public class TestPart extends BaseEntity {
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex;
 
-    @ManyToMany
-    @JoinTable(
-        name = "test_part_questions",
-        joinColumns = @JoinColumn(name = "test_part_id"),
-        inverseJoinColumns = @JoinColumn(name = "question_id")
-    )
-    private Set<Question> questions = new HashSet<>();
+    @OneToMany(mappedBy = "testPart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestPartQuestion> testPartQuestions = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-        name = "test_part_question_sets",
-        joinColumns = @JoinColumn(name = "test_part_id"),
-        inverseJoinColumns = @JoinColumn(name = "question_set_id")
-    )
-    private Set<QuestionSet> questionSets = new HashSet<>();
+    @OneToMany(mappedBy = "testPart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestPartQuestionSet> testPartQuestionSets = new HashSet<>();
 
     // Constructors
     public TestPart() {}

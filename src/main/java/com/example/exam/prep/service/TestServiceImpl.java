@@ -107,30 +107,48 @@ public class TestServiceImpl implements ITestService {
         // Create a new TestPart to link the test and part with order
         TestPart testPart = new TestPart(test, part, partVM.getOrder());
         
+        // Initialize the collections to avoid null pointer exceptions
+        testPart.setTestPartQuestions(new HashSet<>());
+        testPart.setTestPartQuestionSets(new HashSet<>());
+        
         return unitOfWork.getTestPartRepository().save(testPart);
     }
 
     private void handlePartQuestions(TestPartVM partVM, TestPart testPart) {
         // Handle question sets for this test part if any
         if (partVM.getQuestionSets() != null && !partVM.getQuestionSets().isEmpty()) {
-            partVM.getQuestionSets().forEach(questionSet -> {
-                QuestionSet questionSetEntity = unitOfWork.getQuestionSetRepository()
-                    .findById(questionSet.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Question set not found with id: " + questionSet.getId()));
+            int order = 1;
+            for (TestQuestionSetVM questionSetVM : partVM.getQuestionSets()) {
+                QuestionSet questionSet = unitOfWork.getQuestionSetRepository()
+                    .findById(questionSetVM.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Question set not found with id: " + questionSetVM.getId()));
                 
-                testPart.getQuestionSets().add(questionSetEntity);
-            });
+                TestPartQuestionSet testPartQuestionSet = new TestPartQuestionSet(
+                    testPart,
+                    questionSet,
+                    questionSetVM.getOrder() != null ? questionSetVM.getOrder() : order++
+                );
+                
+                testPart.getTestPartQuestionSets().add(testPartQuestionSet);
+            }
         }
         
         // Handle individual questions for this test part if any
         if (partVM.getQuestions() != null && !partVM.getQuestions().isEmpty()) {
-            partVM.getQuestions().forEach(question -> {
-                Question questionEntity = unitOfWork.getQuestionRepository()
-                    .findById(question.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Question not found with id: " + question.getId()));
+            int order = 1;
+            for (TestQuestionVM questionVM : partVM.getQuestions()) {
+                Question question = unitOfWork.getQuestionRepository()
+                    .findById(questionVM.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Question not found with id: " + questionVM.getId()));
                 
-                testPart.getQuestions().add(questionEntity);
-            });
+                TestPartQuestion testPartQuestion = new TestPartQuestion(
+                    testPart,
+                    question,
+                    questionVM.getOrder() != null ? questionVM.getOrder() : order++
+                );
+                
+                testPart.getTestPartQuestions().add(testPartQuestion);
+            }
         }
         
         // Save the updated test part with its relationships
@@ -163,7 +181,7 @@ public class TestServiceImpl implements ITestService {
         // Fetch and set test parts
         if (test.getTestParts() != null && !test.getTestParts().isEmpty()) {
             List<TestPartVM> partVMs = test.getTestParts().stream()
-                .sorted((p1, p2) -> Integer.compare(p1.getOrderIndex(), p2.getOrderIndex()))
+                .sorted(Comparator.comparing(TestPart::getOrderIndex))
                 .map(part -> {
                     TestPartVM partVM = new TestPartVM();
                     partVM.setId(part.getId());
@@ -171,25 +189,30 @@ public class TestServiceImpl implements ITestService {
                     partVM.setDescription(part.getPart() != null ? part.getPart().getDescription() : "");
                     partVM.setOrder(part.getOrderIndex());
                     
-                    // Map questions in this part
-                    if (part.getQuestions() != null) {
-                        List<TestQuestionVM> questionVMs = part.getQuestions().stream()
-                            .map(question -> {
+                    // Map questions in this part using TestPartQuestion
+                    if (part.getTestPartQuestions() != null) {
+                        List<TestQuestionVM> questionVMs = part.getTestPartQuestions().stream()
+                            .sorted(Comparator.comparing(TestPartQuestion::getDisplayOrder))
+                            .map(testPartQuestion -> {
+                                Question question = testPartQuestion.getQuestion();
                                 TestQuestionVM questionVM = new TestQuestionVM();
                                 questionVM.setId(question.getId());
                                 questionVM.setPrompt(question.getPrompt());
-                                questionVM.setPartId(part.getId()); // Set the part ID for reference
+                                questionVM.setPartId(part.getId());
                                 questionVM.setQuestionCategory(convertToQuestionCategoryViewModel(question.getCategory()));
                                 questionVM.setQuestionType(convertToQuestionTypeViewModel(question.getQuestionType()));
                                 questionVM.setScore(question.getScore());
-                                // Map fillBlankAnswers to questionAnswers if they exist, otherwise use empty list
+                                questionVM.setOrder(testPartQuestion.getDisplayOrder());
+                                
+                                // Map fillBlankAnswers to questionAnswers if they exist
                                 List<String> answers = question.getFillBlankAnswers() != null 
                                     ? question.getFillBlankAnswers().stream()
                                         .map(FillBlankAnswer::getAnswerText)
                                         .collect(Collectors.toList())
                                     : Collections.emptyList();
                                 questionVM.setQuestionAnswers(answers);
-                                // Convert Set<Option> to List<OptionViewModel>
+                                
+                                // Map options
                                 List<OptionViewModel> optionVMs = question.getOptions() != null 
                                     ? question.getOptions().stream()
                                         .map(option -> {
@@ -203,9 +226,9 @@ public class TestServiceImpl implements ITestService {
                                     : Collections.emptyList();
                                 questionVM.setOptions(optionVMs);
                                 
-                                // Map FileInfo to FileInfoViewModel
-                                List<FileInfoViewModel> fileInfoViewModels = question.getFileInfos() != null ?
-                                    question.getFileInfos().stream()
+                                // Map file infos
+                                List<FileInfoViewModel> fileInfoViewModels = question.getFileInfos() != null
+                                    ? question.getFileInfos().stream()
                                         .map(file -> {
                                             FileInfoViewModel fileViewModel = new FileInfoViewModel();
                                             fileViewModel.setId(file.getId());
@@ -215,54 +238,56 @@ public class TestServiceImpl implements ITestService {
                                             fileViewModel.setFileSize(file.getFileSize());
                                             return fileViewModel;
                                         })
-                                        .collect(Collectors.toList()) :
-                                    Collections.emptyList();
+                                        .collect(Collectors.toList())
+                                    : Collections.emptyList();
                                 questionVM.setQuestionAudios(fileInfoViewModels);
                                 
-                                questionVM.setOrder(question.getOrder());
+                                allQuestions.add(questionVM);
                                 return questionVM;
                             })
                             .collect(Collectors.toList());
                         partVM.setQuestions(questionVMs);
-                        allQuestions.addAll(questionVMs); // Add to master list
                     }
                     
-                    // Map question sets in this part
-                    if (part.getQuestionSets() != null) {
-                        List<TestQuestionSetVM> questionSetVMs = part.getQuestionSets().stream()
-                            .map(questionSet -> {
+                    // Map question sets in this part using TestPartQuestionSet
+                    if (part.getTestPartQuestionSets() != null) {
+                        List<TestQuestionSetVM> questionSetVMs = part.getTestPartQuestionSets().stream()
+                            .sorted(Comparator.comparing(TestPartQuestionSet::getDisplayOrder))
+                            .map(testPartQuestionSet -> {
+                                QuestionSet questionSet = testPartQuestionSet.getQuestionSet();
                                 TestQuestionSetVM setVM = new TestQuestionSetVM();
                                 setVM.setId(questionSet.getId());
                                 setVM.setTitle(questionSet.getTitle());
                                 setVM.setDescription(questionSet.getDescription());
-                                setVM.setPartId(part.getId()); // Set the part ID for reference
-                                setVM.setOrder(questionSet.getOrder());
                                 setVM.setImageUrl(questionSet.getImageUrl());
+                                setVM.setPartId(part.getId());
+                                setVM.setOrder(testPartQuestionSet.getDisplayOrder());
                                 
                                 // Map questions in this question set
                                 if (questionSet.getQuestionSetItems() != null) {
                                     List<TestQuestionVM> questionVMs = questionSet.getQuestionSetItems().stream()
-                                        .filter(QuestionSetItem::getIsActive)
+                                        .sorted(Comparator.comparing(QuestionSetItem::getOrder))
                                         .map(item -> {
                                             Question question = item.getQuestion();
                                             TestQuestionVM questionVM = new TestQuestionVM();
                                             questionVM.setId(question.getId());
                                             questionVM.setPrompt(question.getPrompt());
+                                            questionVM.setPartId(part.getId());
                                             questionVM.setQuestionType(convertToQuestionTypeViewModel(question.getQuestionType()));
-                                            questionVM.setScore(item.getCustomScore() != null ? item.getCustomScore() : question.getScore());
-                                            questionVM.setOrder(item.getOrder() != null ? item.getOrder() : 0);
+                                            questionVM.setScore(question.getScore());
+                                            questionVM.setOrder(item.getOrder());
                                             
-                                            // Map fill blank answers if any
-                                            if (question.getFillBlankAnswers() != null && !question.getFillBlankAnswers().isEmpty()) {
-                                                List<String> answers = question.getFillBlankAnswers().stream()
+                                            // Map fillBlankAnswers to questionAnswers if they exist
+                                            List<String> answers = question.getFillBlankAnswers() != null 
+                                                ? question.getFillBlankAnswers().stream()
                                                     .map(FillBlankAnswer::getAnswerText)
-                                                    .collect(Collectors.toList());
-                                                questionVM.setQuestionAnswers(answers);
-                                            }
+                                                    .collect(Collectors.toList())
+                                                : Collections.emptyList();
+                                            questionVM.setQuestionAnswers(answers);
                                             
-                                            // Map options if it's a multiple choice question
-                                            if (question.getOptions() != null) {
-                                                List<OptionViewModel> optionVMs = question.getOptions().stream()
+                                            // Map options
+                                            List<OptionViewModel> optionVMs = question.getOptions() != null 
+                                                ? question.getOptions().stream()
                                                     .map(option -> {
                                                         OptionViewModel optionVM = new OptionViewModel();
                                                         optionVM.setId(option.getId());
@@ -270,45 +295,40 @@ public class TestServiceImpl implements ITestService {
                                                         optionVM.setCorrect(option.isCorrect());
                                                         return optionVM;
                                                     })
-                                                    .collect(Collectors.toList());
-                                                questionVM.setOptions(optionVMs);
-                                            }
+                                                    .collect(Collectors.toList())
+                                                : Collections.emptyList();
+                                            questionVM.setOptions(optionVMs);
                                             
-                                            // Map file infos if any
-                                            if (question.getFileInfos() != null && !question.getFileInfos().isEmpty()) {
-                                                List<FileInfoViewModel> fileInfoViewModels = question.getFileInfos().stream()
-                                                    .map(fileInfo -> {
-                                                        FileInfoViewModel fileInfoVM = new FileInfoViewModel();
-                                                        fileInfoVM.setId(fileInfo.getId());
-                                                        fileInfoVM.setFileName(fileInfo.getFileName());
-                                                        fileInfoVM.setFileUrl(fileInfo.getUrl());
-                                                        fileInfoVM.setFileType(fileInfo.getFileType());
-                                                        fileInfoVM.setFileSize(fileInfo.getFileSize());
-                                                        return fileInfoVM;
+                                            // Map file infos
+                                            List<FileInfoViewModel> fileInfoViewModels = question.getFileInfos() != null
+                                                ? question.getFileInfos().stream()
+                                                    .map(file -> {
+                                                        FileInfoViewModel fileViewModel = new FileInfoViewModel();
+                                                        fileViewModel.setId(file.getId());
+                                                        fileViewModel.setFileName(file.getFileName());
+                                                        fileViewModel.setFileUrl(file.getUrl());
+                                                        fileViewModel.setFileType(file.getFileType());
+                                                        fileViewModel.setFileSize(file.getFileSize());
+                                                        return fileViewModel;
                                                     })
-                                                    .collect(Collectors.toList());
-                                                questionVM.setQuestionAudios(fileInfoViewModels);
-                                            }
+                                                    .collect(Collectors.toList())
+                                                : Collections.emptyList();
+                                            questionVM.setQuestionAudios(fileInfoViewModels);
                                             
+                                            allQuestions.add(questionVM);
                                             return questionVM;
                                         })
                                         .collect(Collectors.toList());
                                     setVM.setQuestions(questionVMs);
                                     setVM.setTotalQuestions(questionVMs.size());
-                                    setVM.setTotalScore(questionVMs.stream()
-                                        .mapToInt(TestQuestionVM::getScore)
-                                        .sum());
-                                } else {
-                                    setVM.setQuestions(Collections.emptyList());
-                                    setVM.setTotalQuestions(0);
-                                    setVM.setTotalScore(0);
+                                    setVM.setTotalScore(questionVMs.stream().mapToInt(TestQuestionVM::getScore).sum());
                                 }
                                 
+                                allQuestionSets.add(setVM);
                                 return setVM;
                             })
                             .collect(Collectors.toList());
                         partVM.setQuestionSets(questionSetVMs);
-                        allQuestionSets.addAll(questionSetVMs); // Add to master list
                     }
                     
                     return partVM;
@@ -384,7 +404,7 @@ public class TestServiceImpl implements ITestService {
                     setVM.setId(questionSet.getId());
                     setVM.setTitle(questionSet.getTitle());
                     setVM.setDescription(questionSet.getDescription());
-                    setVM.setOrder(questionSet.getOrder());
+                    setVM.setOrder(detail.getOrder());
                     setVM.setImageUrl(questionSet.getImageUrl());
                     
                     // Map questions in this question set

@@ -37,8 +37,8 @@ public class QuestionSet extends BaseEntity {
     private Set<TestQuestionSetDetail> testQuestionSetDetails = new HashSet<>();
 
     @JsonIgnore
-    @ManyToMany(mappedBy = "questionSets")
-    private Set<TestPart> testParts = new HashSet<>();
+    @OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestPartQuestionSet> testPartQuestionSets = new HashSet<>();
 
     // Constructors
     public QuestionSet() {}
