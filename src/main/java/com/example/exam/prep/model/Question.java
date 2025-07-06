@@ -54,8 +54,8 @@ public class Question extends BaseEntity {
     private Set<TestQuestionDetail> testQuestionDetails = new HashSet<>();
 
     @JsonIgnore
-    @ManyToMany(mappedBy = "questions", fetch = FetchType.LAZY)
-    private Set<TestPart> testParts = new HashSet<>();
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestPartQuestion> testPartQuestions = new HashSet<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "question", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
