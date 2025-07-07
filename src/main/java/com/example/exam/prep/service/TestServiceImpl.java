@@ -5,6 +5,7 @@ import com.example.exam.prep.unitofwork.IUnitOfWork;
 import com.example.exam.prep.model.viewmodels.question.QuestionTypeViewModel;
 import com.example.exam.prep.model.viewmodels.file.FileInfoViewModel;
 import com.example.exam.prep.vm.test.TestCreateVM;
+import com.example.exam.prep.vm.test.TestEditVM;
 import com.example.exam.prep.vm.test.TestPartVM;
 import com.example.exam.prep.vm.test.TestVM;
 import jakarta.persistence.EntityNotFoundException;
@@ -29,6 +30,103 @@ public class TestServiceImpl implements ITestService {
     public TestServiceImpl(IUnitOfWork unitOfWork, IFileStorageService fileStorageService) {
         this.unitOfWork = unitOfWork;
         this.fileStorageService = fileStorageService;
+    }
+
+    @Override
+    @Transactional
+    public Test editTest(TestEditVM testVM, List<MultipartFile> files) throws IOException {
+        // Find existing test
+        Test test = unitOfWork.getTestRepository().findById(testVM.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Test not found with id: " + testVM.getId()));
+
+        // Clear existing relationships - cascading will handle the deletes
+        if (test.getTestParts() != null) {
+            test.getTestParts().clear();
+        }
+        if (test.getTestFiles() != null) {
+            test.getTestFiles().clear();
+        }
+        if (test.getTestQuestionDetails() != null) {
+            test.getTestQuestionDetails().clear();
+        }
+        if (test.getTestQuestionSetDetails() != null) {
+            test.getTestQuestionSetDetails().clear();
+        }
+        
+        // Save to ensure cascading deletes take effect
+        unitOfWork.getTestRepository().saveAndFlush(test);
+        
+        // Clear test skills separately as they're not part of the cascading relationship
+        List<TestSkill> testSkills = unitOfWork.getTestSkillRepository().findByTestId(test.getId());
+        if (testSkills != null && !testSkills.isEmpty()) {
+            unitOfWork.getTestSkillRepository().deleteAll(testSkills);
+        }
+
+        // Update test properties
+        test.setName(testVM.getTitle());
+        test.setDescription(""); // Description is not available in TestEditVM, using empty string
+
+        // Set test category if provided
+        if (testVM.getTestCategoryId() != null) {
+            TestCategory testCategory = unitOfWork.getTestCategoryRepository().findById(testVM.getTestCategoryId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Test category not found with id: " + testVM.getTestCategoryId()));
+            test.setTestCategory(testCategory);
+        } else {
+            test.setTestCategory(null);
+        }
+
+        Test updatedTest = unitOfWork.getTestRepository().save(test);
+
+        // Handle file uploads if any
+        if (files != null && !files.isEmpty()) {
+            // Filter out empty files
+            List<MultipartFile> nonEmptyFiles = files.stream()
+                    .filter(file -> !file.isEmpty())
+                    .collect(Collectors.toList());
+
+            if (!nonEmptyFiles.isEmpty()) {
+                // Upload files using the file storage service
+                String uploadPath = "tests/" + updatedTest.getId().toString();
+                List<FileInfo> uploadedFiles = fileStorageService.uploadFiles(nonEmptyFiles, uploadPath);
+
+                // Create TestFile relationships
+                for (FileInfo fileInfo : uploadedFiles) {
+                    TestFile testFile = new TestFile(updatedTest, fileInfo);
+                    unitOfWork.getTestFileRepository().save(testFile);
+                }
+            }
+        }
+
+        // Handle skills
+        if (testVM.getSkillIds() != null && !testVM.getSkillIds().isEmpty()) {
+            List<Skill> skills = unitOfWork.getSkillRepository().findAllById(testVM.getSkillIds());
+            if (skills.size() != testVM.getSkillIds().size()) {
+                throw new IllegalArgumentException("One or more skills not found");
+            }
+
+            // Create TestSkill entities for each skill
+            for (Skill skill : skills) {
+                TestSkill testSkill = new TestSkill(updatedTest, skill);
+                unitOfWork.getTestSkillRepository().save(testSkill);
+            }
+        }
+
+        // Handle test parts and their questions
+        if (testVM.getListPart() != null) {
+            testVM.getListPart().forEach(partVM -> {
+                TestPart testPart = createAndSaveTestPart(partVM, updatedTest);
+                handlePartQuestions(partVM, testPart);
+            });
+        }
+
+        // Handle question sets
+        handleQuestionSets(testVM, updatedTest);
+
+        // Handle individual questions
+        handleIndividualQuestions(testVM, updatedTest);
+
+        return updatedTest;
     }
 
     @Override
@@ -191,9 +289,9 @@ public class TestServiceImpl implements ITestService {
 
                         // Map questions in this part using TestPartQuestion
                         if (part.getTestPartQuestions() != null) {
-                            List<TestQuestionVM> questionVMs = part.getTestPartQuestions().stream()
+                            part.getTestPartQuestions().stream()
                                     .sorted(Comparator.comparing(TestPartQuestion::getDisplayOrder))
-                                    .map(testPartQuestion -> {
+                                    .forEach(testPartQuestion -> {
                                         Question question = testPartQuestion.getQuestion();
                                         TestQuestionVM questionVM = new TestQuestionVM();
                                         questionVM.setId(question.getId());
@@ -247,16 +345,14 @@ public class TestServiceImpl implements ITestService {
                                         TestQuestionItemVM itemVM = new TestQuestionItemVM();
                                         itemVM.setQuestion(questionVM);
                                         allQuestionItems.add(itemVM);
-                                        return questionVM;
-                                    })
-                                    .collect(Collectors.toList());
+                                    });
                         }
 
                         // Map question sets in this part using TestPartQuestionSet
                         if (part.getTestPartQuestionSets() != null) {
-                            List<TestQuestionSetVM> questionSetVMs = part.getTestPartQuestionSets().stream()
+                            part.getTestPartQuestionSets().stream()
                                     .sorted(Comparator.comparing(TestPartQuestionSet::getDisplayOrder))
-                                    .map(testPartQuestionSet -> {
+                                    .forEach(testPartQuestionSet -> {
                                         QuestionSet questionSet = testPartQuestionSet.getQuestionSet();
                                         TestQuestionSetVM setVM = new TestQuestionSetVM();
                                         setVM.setId(questionSet.getId());
@@ -339,9 +435,7 @@ public class TestServiceImpl implements ITestService {
                                         itemVM.setQuestionSet(setVM);
                                         allQuestionItems.add(itemVM);
                                         allQuestionSets.add(setVM);
-                                        return setVM;
-                                    })
-                                    .collect(Collectors.toList());
+                                    });
                         }
 
                         return partVM;
@@ -352,9 +446,9 @@ public class TestServiceImpl implements ITestService {
 
         // Map individual questions from testQuestionDetails
         if (test.getTestQuestionDetails() != null) {
-            List<TestQuestionVM> individualQuestions = test.getTestQuestionDetails().stream()
+            test.getTestQuestionDetails().stream()
                     .sorted(Comparator.comparing(TestQuestionDetail::getOrder))
-                    .map(detail -> {
+                    .forEach(detail -> {
                         Question question = detail.getQuestion();
                         TestQuestionVM questionVM = new TestQuestionVM();
                         questionVM.setId(question.getId());
@@ -404,17 +498,14 @@ public class TestServiceImpl implements ITestService {
                         TestQuestionItemVM itemVM = new TestQuestionItemVM();
                         itemVM.setQuestion(questionVM);
                         allQuestionItems.add(itemVM);
-
-                        return questionVM;
-                    })
-                    .collect(Collectors.toList());
+                    });
         }
 
         // Map question sets from testQuestionSetDetails
         if (test.getTestQuestionSetDetails() != null) {
-            List<TestQuestionSetVM> questionSetVMs = test.getTestQuestionSetDetails().stream()
+            test.getTestQuestionSetDetails().stream()
                     .sorted(Comparator.comparing(TestQuestionSetDetail::getOrder))
-                    .map(detail -> {
+                    .forEach(detail -> {
                         QuestionSet questionSet = detail.getQuestionSet();
                         TestQuestionSetVM setVM = new TestQuestionSetVM();
                         setVM.setId(questionSet.getId());
@@ -498,9 +589,7 @@ public class TestServiceImpl implements ITestService {
                         itemVM.setQuestionSet(setVM);
                         allQuestionItems.add(itemVM);
 
-                        return setVM;
-                    })
-                    .collect(Collectors.toList());
+                    });
         }
 
         vm.setListQuestionItem(allQuestionItems);
