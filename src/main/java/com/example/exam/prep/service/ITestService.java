@@ -2,6 +2,7 @@ package com.example.exam.prep.service;
 
 import com.example.exam.prep.model.Test;
 import com.example.exam.prep.vm.test.TestCreateVM;
+import com.example.exam.prep.vm.test.TestEditVM;
 import com.example.exam.prep.vm.test.TestVM;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,4 +27,14 @@ public interface ITestService {
      * @throws jakarta.persistence.EntityNotFoundException if test not found
      */
     TestVM findById(UUID id);
+    
+    /**
+     * Update an existing test based on the provided view model and files
+     * @param testVM The view model containing test update data
+     * @param files Optional list of files to be associated with the test
+     * @return The updated Test entity
+     * @throws IOException if there's an error processing the files
+     * @throws jakarta.persistence.EntityNotFoundException if test not found
+     */
+    Test editTest(TestEditVM testVM, List<MultipartFile> files) throws IOException;
 }
