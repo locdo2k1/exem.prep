@@ -37,4 +37,11 @@ public interface ITestService {
      * @throws jakarta.persistence.EntityNotFoundException if test not found
      */
     Test editTest(TestEditVM testVM, List<MultipartFile> files) throws IOException;
+    
+    /**
+     * Delete a test by its ID
+     * @param id The ID of the test to delete
+     * @throws jakarta.persistence.EntityNotFoundException if test not found
+     */
+    void deleteTest(UUID id);
 }

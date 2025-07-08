@@ -131,6 +131,66 @@ public class TestServiceImpl implements ITestService {
 
     @Override
     @Transactional
+    public void deleteTest(UUID id) {
+        // First, load the test with all its relationships
+        Optional<Test> testOpt = unitOfWork.getTestRepository().findByIdWithRelations(id);
+        if (testOpt.isEmpty()) {
+            throw new EntityNotFoundException("Test not found with id: " + id);
+        }
+        Test test = testOpt.get();
+
+        try {
+            // Delete test parts first
+            if (test.getTestParts() != null && !test.getTestParts().isEmpty()) {
+                // Create a new list to avoid concurrent modification
+                List<TestPart> partsToDelete = new ArrayList<>(test.getTestParts());
+                for (TestPart part : partsToDelete) {
+                    unitOfWork.getTestPartRepository().delete(part);
+                }
+                test.getTestParts().clear();
+                unitOfWork.getTestPartRepository().flush(); // Flush to ensure deletes are processed
+            }
+            
+            // Delete test files
+            if (test.getTestFiles() != null && !test.getTestFiles().isEmpty()) {
+                unitOfWork.getTestFileRepository().deleteAll(test.getTestFiles());
+                test.getTestFiles().clear();
+                unitOfWork.getTestFileRepository().flush();
+            }
+            
+            // Delete test question details
+            if (test.getTestQuestionDetails() != null && !test.getTestQuestionDetails().isEmpty()) {
+                unitOfWork.getTestQuestionDetailRepository().deleteAll(test.getTestQuestionDetails());
+                test.getTestQuestionDetails().clear();
+                unitOfWork.getTestQuestionDetailRepository().flush();
+            }
+            
+            // Delete test question set details
+            if (test.getTestQuestionSetDetails() != null && !test.getTestQuestionSetDetails().isEmpty()) {
+                unitOfWork.getTestQuestionSetDetailRepository().deleteAll(test.getTestQuestionSetDetails());
+                test.getTestQuestionSetDetails().clear();
+                unitOfWork.getTestQuestionSetDetailRepository().flush();
+            }
+            
+            // Delete test skills
+            if (test.getTestSkills() != null && !test.getTestSkills().isEmpty()) {
+                unitOfWork.getTestSkillRepository().deleteAll(test.getTestSkills());
+                test.getTestSkills().clear();
+                unitOfWork.getTestSkillRepository().flush();
+            }
+            
+            // Delete the test itself
+            unitOfWork.getTestRepository().delete(test);
+            unitOfWork.getTestRepository().flush();
+            
+        } catch (Exception e) {
+            // Log the error and rethrow
+            throw new RuntimeException("Error deleting test with id: " + id, e);
+        }
+    }
+
+    @Override
+    @Transactional
     public Test createTest(TestCreateVM testVM, List<MultipartFile> files) throws IOException {
         // Create and save the test
         Test test = new Test();

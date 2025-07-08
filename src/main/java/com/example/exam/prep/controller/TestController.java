@@ -93,33 +93,25 @@ public class TestController {
                 }
         }
 
-        // TODO: Uncomment and implement these methods as needed
-        /*
-         * @GetMapping
-         * public ResponseEntity<ApiResponse<Page<Test>>> getAllTests(
-         * 
-         * @RequestParam(required = false) String title,
-         * 
-         * @RequestParam(required = false) UUID testTypeId,
-         * Pageable pageable) {
-         * // Implementation for getting paginated tests with filtering
-         * throw new UnsupportedOperationException("Not implemented yet");
-         * }
-         * 
-         * @PutMapping("/{id}")
-         * public ResponseEntity<ApiResponse<Test>> updateTest(
-         * 
-         * @PathVariable UUID id,
-         * 
-         * @RequestBody TestUpdateVM testVM) {
-         * // Implementation for updating a test
-         * throw new UnsupportedOperationException("Not implemented yet");
-         * }
-         * 
-         * @DeleteMapping("/{id}")
-         * public ResponseEntity<ApiResponse<Void>> deleteTest(@PathVariable UUID id) {
-         * // Implementation for deleting a test
-         * throw new UnsupportedOperationException("Not implemented yet");
-         * }
-         */
+        @DeleteMapping("/{id}")
+        public ResponseEntity<ApiResponse<Void>> deleteTest(@PathVariable UUID id) {
+                try {
+                        testService.deleteTest(id);
+                        return ResponseEntity
+                                        .status(HttpStatus.NO_CONTENT)
+                                        .body(ApiResponse.success(null, TestResponseMessage.TEST_DELETED.getMessage()));
+                } catch (jakarta.persistence.EntityNotFoundException e) {
+                        return ResponseEntity
+                                        .status(HttpStatus.NOT_FOUND)
+                                        .body(ApiResponse.error(
+                                                        TestResponseMessage.TEST_NOT_FOUND.getMessage(),
+                                                        HttpStatus.NOT_FOUND.value()));
+                } catch (Exception e) {
+                        return ResponseEntity
+                                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body(ApiResponse.error(
+                                                        "Error deleting test: " + e.getMessage(),
+                                                        HttpStatus.INTERNAL_SERVER_ERROR.value()));
+                }
+        }
 }
