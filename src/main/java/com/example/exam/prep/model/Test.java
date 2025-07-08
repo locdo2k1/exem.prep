@@ -35,6 +35,9 @@ public class Test extends BaseEntity {
     @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TestQuestionSetDetail> testQuestionSetDetails = new java.util.HashSet<>();
 
+    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TestSkill> testSkills = new java.util.HashSet<>();
+
     // Constructors
     public Test() {}
 
