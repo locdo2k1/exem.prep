@@ -81,15 +81,13 @@ public class TestController {
                 try {
                         TestVM testVM = testService.findById(id);
                         return ResponseEntity.ok(
-                                ApiResponse.success(testVM, TestResponseMessage.TEST_RETRIEVED.getMessage())
-                        );
+                                        ApiResponse.success(testVM, TestResponseMessage.TEST_RETRIEVED.getMessage()));
                 } catch (jakarta.persistence.EntityNotFoundException e) {
                         return ResponseEntity
-                                .status(HttpStatus.NOT_FOUND)
-                                .body(ApiResponse.error(
-                                        TestResponseMessage.TEST_NOT_FOUND.getMessage(),
-                                        HttpStatus.NOT_FOUND.value()
-                                ));
+                                        .status(HttpStatus.NOT_FOUND)
+                                        .body(ApiResponse.error(
+                                                        TestResponseMessage.TEST_NOT_FOUND.getMessage(),
+                                                        HttpStatus.NOT_FOUND.value()));
                 }
         }
 
