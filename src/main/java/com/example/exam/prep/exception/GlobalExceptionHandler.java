@@ -27,6 +27,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * @param request The web request during which the exception was thrown
      * @return ResponseEntity with error details and HTTP 500 status
      */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public final ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(
+            ResourceNotFoundException ex, WebRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(ex.getMessage(), HttpStatus.NOT_FOUND.value()));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public final ResponseEntity<ApiResponse<Void>> handleIllegalStateException(
+            IllegalStateException ex, WebRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage(), HttpStatus.BAD_REQUEST.value()));
+    }
+
     @ExceptionHandler(Exception.class)
     public final ResponseEntity<ApiResponse<Void>> handleAllExceptions(Exception ex, WebRequest request) {
         // In production, you might want to log the full exception

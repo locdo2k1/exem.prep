@@ -5,6 +5,7 @@ import com.example.exam.prep.model.QuestionSet;
 import com.example.exam.prep.model.viewmodels.questionset.QuestionSetCreateVM;
 import com.example.exam.prep.model.viewmodels.questionset.QuestionSetUpdateVM;
 import com.example.exam.prep.model.viewmodels.questionset.QuestionSetVM;
+import com.example.exam.prep.model.viewmodels.questionset.QuestionSetSimpleVM;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.IQuestionSetService;
 import jakarta.validation.Valid;
@@ -27,6 +28,32 @@ import java.util.UUID;
 public class QuestionSetController {
 
         private final IQuestionSetService questionSetService;
+
+        @GetMapping("/simple")
+        public ResponseEntity<ApiResponse<Page<QuestionSetSimpleVM>>> getSimpleQuestionSets(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "title") String sort,
+                        @RequestParam(defaultValue = "asc") String direction,
+                        @RequestParam(required = false) String search) {
+
+                Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction)
+                                ? Sort.Direction.DESC
+                                : Sort.Direction.ASC;
+
+                Pageable pageable = PageRequest.of(
+                                Math.max(0, page),
+                                Math.max(1, size),
+                                Sort.by(sortDirection, sort));
+
+                Page<QuestionSetSimpleVM> questionSets = questionSetService.findSimpleQuestionSets(search, pageable);
+
+                return ResponseEntity.ok(ApiResponse.<Page<QuestionSetSimpleVM>>builder()
+                        .success(true)
+                        .message(QuestionSetResponseMessage.QUESTION_SETS_RETRIEVED.getMessage())
+                        .data(questionSets)
+                        .build());
+        }
 
         @GetMapping
         public ResponseEntity<ApiResponse<Page<QuestionSetVM>>> getAllQuestionSets(

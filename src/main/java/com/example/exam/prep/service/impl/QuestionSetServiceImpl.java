@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import com.example.exam.prep.model.viewmodels.questionset.QuestionSetVM;
+import com.example.exam.prep.model.viewmodels.questionset.QuestionSetSimpleVM;
 import java.util.Set;
 import java.util.UUID;
 
@@ -137,6 +138,19 @@ public class QuestionSetServiceImpl implements IQuestionSetService {
         
         // Save and return the updated question set
         return unitOfWork.getQuestionSetRepository().save(existingQuestionSet);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<QuestionSetSimpleVM> findSimpleQuestionSets(String search, Pageable pageable) {
+        Page<QuestionSet> questionSets;
+        if (search != null && !search.trim().isEmpty()) {
+            questionSets = unitOfWork.getQuestionSetRepository().findAllByTitleContaining(search.trim(), pageable);
+        } else {
+            questionSets = unitOfWork.getQuestionSetRepository().findAllByIsDeletedFalse(pageable);
+        }
+        
+        return questionSets.map(QuestionSetSimpleVM::fromEntity);
     }
 
     @Override
