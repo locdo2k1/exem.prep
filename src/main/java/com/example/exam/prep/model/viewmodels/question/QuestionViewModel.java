@@ -18,4 +18,5 @@ public class QuestionViewModel {
     private List<String> questionAnswers;
     private List<OptionViewModel> options;
     private List<FileInfoViewModel> questionAudios;
+    private int order;
 }

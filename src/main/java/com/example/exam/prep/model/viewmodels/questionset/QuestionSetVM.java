@@ -9,6 +9,8 @@ import com.example.exam.prep.model.viewmodels.option.OptionViewModel;
 import com.example.exam.prep.model.viewmodels.file.FileInfoViewModel;
 import com.example.exam.prep.model.FillBlankAnswer;
 import java.util.ArrayList;
+import java.util.Comparator;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,7 +43,7 @@ public class QuestionSetVM {
     /**
      * Converts a Question entity to a QuestionViewModel
      */
-    private static QuestionViewModel toQuestionViewModel(Question question, Integer customScore) {
+    private static QuestionViewModel toQuestionViewModel(Question question, Integer customScore, Integer order) {
         if (question == null) {
             return null;
         }
@@ -50,6 +52,7 @@ public class QuestionSetVM {
         viewModel.setId(question.getId());
         viewModel.setPrompt(question.getPrompt());
         viewModel.setScore(customScore != null ? customScore : question.getScore());
+        viewModel.setOrder(order);
         
         // Set question category if available
         if (question.getCategory() != null) {
@@ -127,7 +130,8 @@ public class QuestionSetVM {
         // Convert QuestionSetItems to QuestionViewModels
         List<QuestionViewModel> questions = questionSet.getQuestionSetItems().stream()
                 .filter(QuestionSetItem::getIsActive)
-                .map(item -> toQuestionViewModel(item.getQuestion(), item.getCustomScore()))
+                .map(item -> toQuestionViewModel(item.getQuestion(), item.getCustomScore(), item.getOrder()))
+                .sorted(Comparator.comparingInt(QuestionViewModel::getOrder))
                 .collect(Collectors.toList());
         
         // Calculate total score
