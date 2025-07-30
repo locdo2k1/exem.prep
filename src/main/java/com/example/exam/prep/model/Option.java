@@ -20,4 +20,7 @@ public class Option extends BaseEntity {
 
     @Column(nullable = false)
     private boolean correct; // Flag to indicate if this option is the correct answer
+
+    @Column(name = "display_order")
+    private int order;
 }
