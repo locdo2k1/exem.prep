@@ -3,6 +3,7 @@ package com.example.exam.prep.controller;
 import com.example.exam.prep.model.Test;
 import com.example.exam.prep.service.ITestService;
 import com.example.exam.prep.vm.test.TestVM;
+import com.example.exam.prep.vm.test.TestVMSimple;
 import com.example.exam.prep.constant.response.TestResponseMessage;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.vm.test.TestCreateVM;
@@ -23,6 +24,32 @@ import java.util.UUID;
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class TestController {
+    @GetMapping("/simple")
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<TestVMSimple>>> getAllTestsSimple(
+            @org.springframework.data.web.PageableDefault(size = 10, sort = "name") org.springframework.data.domain.Pageable pageable,
+            @RequestParam(value = "search", required = false) String search) {
+        try {
+            var page = testService.getAllTestsSimple(pageable, search
+            );
+            return ResponseEntity.ok(ApiResponse.success(page, com.example.exam.prep.constant.response.TestResponseMessage.TESTS_RETRIEVED.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error retrieving tests: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<TestVM>>> getAllTests(
+            @org.springframework.data.web.PageableDefault(size = 10, sort = "name") org.springframework.data.domain.Pageable pageable,
+            @RequestParam(value = "search", required = false) String search) {
+        try {
+            var page = testService.getAllTests(pageable, search);
+            return ResponseEntity.ok(ApiResponse.success(page, com.example.exam.prep.constant.response.TestResponseMessage.TESTS_RETRIEVED.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error retrieving tests: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        }
+    }
         private final ITestService testService;
 
         @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

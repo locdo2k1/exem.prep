@@ -4,6 +4,8 @@ import com.example.exam.prep.model.Test;
 import com.example.exam.prep.vm.test.TestCreateVM;
 import com.example.exam.prep.vm.test.TestEditVM;
 import com.example.exam.prep.vm.test.TestVM;
+import com.example.exam.prep.vm.test.TestVMSimple;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -44,4 +46,19 @@ public interface ITestService {
      * @throws jakarta.persistence.EntityNotFoundException if test not found
      */
     void deleteTest(UUID id);
+    /**
+     * Get all tests with paging and search
+     * @param pageable the paging and sorting information
+     * @param search the search query (can be null or empty for all)
+     * @return a page of TestVM matching the criteria
+     */
+    org.springframework.data.domain.Page<TestVM> getAllTests(org.springframework.data.domain.Pageable pageable, String search);
+
+    /**
+     * Get all tests (simple) with paging and search
+     * @param pageable the paging and sorting information
+     * @param search the search query (can be null or empty for all)
+     * @return a page of TestVMSimple matching the criteria
+     */
+    org.springframework.data.domain.Page<TestVMSimple> getAllTestsSimple(org.springframework.data.domain.Pageable pageable, String search);
 }

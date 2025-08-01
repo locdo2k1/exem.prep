@@ -19,11 +19,25 @@ import java.util.stream.Collectors;
 import com.example.exam.prep.model.viewmodels.option.OptionViewModel;
 import com.example.exam.prep.model.viewmodels.question.QuestionCategoryViewModel;
 import com.example.exam.prep.vm.test.*;
-import com.example.exam.prep.model.*;
 
 @Service
 @Transactional
 public class TestServiceImpl implements ITestService {
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<TestVM> getAllTests(org.springframework.data.domain.Pageable pageable, String search) {
+        var testRepo = unitOfWork.getTestRepository();
+        String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        return testRepo.searchTests(searchTerm, pageable).map(TestVM::fromEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<TestVMSimple> getAllTestsSimple(org.springframework.data.domain.Pageable pageable, String search) {
+        var testRepo = unitOfWork.getTestRepository();
+        String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        return testRepo.searchTests(searchTerm, pageable).map(com.example.exam.prep.vm.test.TestVMSimple::fromEntity);
+    }
     private final IUnitOfWork unitOfWork;
     private final IFileStorageService fileStorageService;
 
