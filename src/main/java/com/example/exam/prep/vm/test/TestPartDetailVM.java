@@ -23,7 +23,7 @@ public class TestPartDetailVM {
     private String title;
     private String description;
     private Integer order;
-    private List<TestQuestionItemVM> questionItems;
+    private List<TestQuestionItemVM> questionItems = new java.util.ArrayList<>();
     
     // Helper methods
     public int getTotalQuestions() {

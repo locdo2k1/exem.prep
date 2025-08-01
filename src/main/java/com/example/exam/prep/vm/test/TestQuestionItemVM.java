@@ -8,4 +8,5 @@ import lombok.Setter;
 public class TestQuestionItemVM{
     private TestQuestionVM question;
     private TestQuestionSetVM questionSet;
+    private int order;
 }

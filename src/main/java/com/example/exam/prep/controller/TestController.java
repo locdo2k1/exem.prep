@@ -103,6 +103,66 @@ public class TestController {
                 }
         }
 
+        @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<ApiResponse<Test>> editTest(
+                @PathVariable UUID id,
+                @RequestPart("testData") String testVMString,
+                @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+            try {
+                // Debug: Log the incoming JSON
+                System.out.println("Received test data for edit: " + testVMString);
+
+                // Parse JSON to TestEditVM
+                ObjectMapper objectMapper = new ObjectMapper();
+                com.example.exam.prep.vm.test.TestEditVM testVM;
+                try {
+                    testVM = objectMapper.readValue(testVMString, com.example.exam.prep.vm.test.TestEditVM.class);
+                    // Ensure the path variable id matches the VM id
+                    testVM.setId(id);
+                } catch (Exception e) {
+                    return ResponseEntity
+                            .status(HttpStatus.BAD_REQUEST)
+                            .body(ApiResponse.error(
+                                    "Invalid JSON format: " + e.getMessage(),
+                                    HttpStatus.BAD_REQUEST.value()));
+                }
+
+                // Debug: Log parsed object
+                System.out.println("Parsed TestEditVM: " + testVM.toString());
+
+                // Process files if any
+                if (files != null && !files.isEmpty()) {
+                    System.out.println("Received " + files.size() + " file(s) for edit");
+                    for (MultipartFile file : files) {
+                        System.out.println("File: " + file.getOriginalFilename() +
+                                " (" + file.getSize() + " bytes)");
+                    }
+                }
+
+                // Process the request
+                Test updatedTest = testService.editTest(testVM, files);
+                return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(ApiResponse.success(updatedTest,
+                                TestResponseMessage.TEST_UPDATED.getMessage()));
+
+            } catch (jakarta.persistence.EntityNotFoundException e) {
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(
+                                TestResponseMessage.TEST_NOT_FOUND.getMessage(),
+                                HttpStatus.NOT_FOUND.value()));
+            } catch (Exception e) {
+                // Log the full exception for debugging
+                e.printStackTrace();
+                return ResponseEntity
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ApiResponse.error(
+                                "Error processing request: " + e.getMessage(),
+                                HttpStatus.INTERNAL_SERVER_ERROR.value()));
+            }
+        }
+
         @GetMapping("/{id}")
         public ResponseEntity<ApiResponse<TestVM>> getTestById(@PathVariable UUID id) {
                 try {
