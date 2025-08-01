@@ -19,11 +19,25 @@ import java.util.stream.Collectors;
 import com.example.exam.prep.model.viewmodels.option.OptionViewModel;
 import com.example.exam.prep.model.viewmodels.question.QuestionCategoryViewModel;
 import com.example.exam.prep.vm.test.*;
-import com.example.exam.prep.model.*;
 
 @Service
 @Transactional
 public class TestServiceImpl implements ITestService {
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<TestVM> getAllTests(org.springframework.data.domain.Pageable pageable, String search) {
+        var testRepo = unitOfWork.getTestRepository();
+        String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        return testRepo.searchTests(searchTerm, pageable).map(TestVM::fromEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<TestVMSimple> getAllTestsSimple(org.springframework.data.domain.Pageable pageable, String search) {
+        var testRepo = unitOfWork.getTestRepository();
+        String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        return testRepo.searchTests(searchTerm, pageable).map(com.example.exam.prep.vm.test.TestVMSimple::fromEntity);
+    }
     private final IUnitOfWork unitOfWork;
     private final IFileStorageService fileStorageService;
 
@@ -404,7 +418,9 @@ public class TestServiceImpl implements ITestService {
 
                                         TestQuestionItemVM itemVM = new TestQuestionItemVM();
                                         itemVM.setQuestion(questionVM);
+                                        itemVM.setOrder(questionVM.getOrder());
                                         allQuestionItems.add(itemVM);
+                                        partVM.getQuestionItems().add(itemVM);
                                     });
                         }
 
@@ -436,7 +452,7 @@ public class TestServiceImpl implements ITestService {
                                                         questionVM.setQuestionType(convertToQuestionTypeViewModel(
                                                                 question.getQuestionType()));
                                                         questionVM.setScore(question.getScore());
-                                                        questionVM.setOrder(item.getOrder());
+                                                        questionVM.setOrder(setVM.getOrder() - 1 + item.getOrder());
 
                                                         // Map fillBlankAnswers to questionAnswers if they exist
                                                         List<String> answers = question.getFillBlankAnswers() != null
@@ -480,8 +496,6 @@ public class TestServiceImpl implements ITestService {
                                                                                 .collect(Collectors.toList())
                                                                         : Collections.emptyList();
                                                         questionVM.setQuestionAudios(fileInfoViewModels);
-
-                                                        allQuestions.add(questionVM);
                                                         return questionVM;
                                                     })
                                                     .collect(Collectors.toList());
@@ -493,8 +507,9 @@ public class TestServiceImpl implements ITestService {
 
                                         TestQuestionItemVM itemVM = new TestQuestionItemVM();
                                         itemVM.setQuestionSet(setVM);
-                                        allQuestionItems.add(itemVM);
+                                        itemVM.setOrder(setVM.getOrder());
                                         allQuestionSets.add(setVM);
+                                        partVM.getQuestionItems().add(itemVM);
                                     });
                         }
 
@@ -589,7 +604,7 @@ public class TestServiceImpl implements ITestService {
                                                 convertToQuestionTypeViewModel(question.getQuestionType()));
                                         questionVM.setScore(item.getCustomScore() != null ? item.getCustomScore()
                                                 : question.getScore());
-                                        questionVM.setOrder(item.getOrder() != null ? item.getOrder() : 0);
+                                        questionVM.setOrder(item.getOrder() != null ? item.getOrder() - 1 + setVM.getOrder() : 0);
 
                                         // Map fill blank answers if any
                                         if (question.getFillBlankAnswers() != null
