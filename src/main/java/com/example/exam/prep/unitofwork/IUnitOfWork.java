@@ -44,4 +44,10 @@ public interface IUnitOfWork {
     ITestQuestionDetailRepository getTestQuestionDetailRepository();
     
     ITestQuestionSetDetailRepository getTestQuestionSetDetailRepository();
+    
+    /**
+     * Gets the Test Part Attempt repository.
+     * @return ITestPartAttemptRepository instance
+     */
+    ITestPartAttemptRepository getTestPartAttemptRepository();
 }
