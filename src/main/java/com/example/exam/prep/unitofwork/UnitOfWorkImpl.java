@@ -33,6 +33,7 @@ public class UnitOfWorkImpl implements IUnitOfWork {
     @Lazy private final ITestFileRepository testFileRepository;
     @Lazy private final ITestQuestionDetailRepository testQuestionDetailRepository;
     @Lazy private final ITestQuestionSetDetailRepository testQuestionSetDetailRepository;
+    @Lazy private final ITestPartAttemptRepository testPartAttemptRepository;
     
     // Other repositories
     @Lazy private final IFillBlankAnswerRepository fillBlankAnswerRepository;
@@ -62,6 +63,7 @@ public class UnitOfWorkImpl implements IUnitOfWork {
         @Lazy ITestFileRepository testFileRepository,
         @Lazy ITestQuestionDetailRepository testQuestionDetailRepository,
         @Lazy ITestQuestionSetDetailRepository testQuestionSetDetailRepository,
+        @Lazy ITestPartAttemptRepository testPartAttemptRepository,
         @Lazy IFillBlankAnswerRepository fillBlankAnswerRepository,
         @Lazy IOptionRepository optionRepository,
         @Lazy IPartRepository partRepository,
@@ -83,6 +85,7 @@ public class UnitOfWorkImpl implements IUnitOfWork {
         this.testFileRepository = testFileRepository;
         this.testQuestionDetailRepository = testQuestionDetailRepository;
         this.testQuestionSetDetailRepository = testQuestionSetDetailRepository;
+        this.testPartAttemptRepository = testPartAttemptRepository;
         this.fillBlankAnswerRepository = fillBlankAnswerRepository;
         this.optionRepository = optionRepository;
         this.partRepository = partRepository;
@@ -112,4 +115,5 @@ public class UnitOfWorkImpl implements IUnitOfWork {
     @Override public ITestCategoryRepository getTestCategoryRepository() { return testCategoryRepository; }
     @Override public ITestQuestionDetailRepository getTestQuestionDetailRepository() { return testQuestionDetailRepository; }
     @Override public ITestQuestionSetDetailRepository getTestQuestionSetDetailRepository() { return testQuestionSetDetailRepository; }
+    @Override public ITestPartAttemptRepository getTestPartAttemptRepository() { return testPartAttemptRepository; }
 }

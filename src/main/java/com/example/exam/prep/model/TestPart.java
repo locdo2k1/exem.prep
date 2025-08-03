@@ -6,6 +6,8 @@ import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Setter
 @Getter
@@ -28,6 +30,9 @@ public class TestPart extends BaseEntity {
 
     @OneToMany(mappedBy = "testPart", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TestPartQuestionSet> testPartQuestionSets = new HashSet<>();
+
+    @OneToMany(mappedBy = "testPart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TestPartAttempt> testPartAttempts = new ArrayList<>();
 
     // Constructors
     public TestPart() {}
