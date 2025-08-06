@@ -347,7 +347,6 @@ public class TestServiceImpl implements ITestService {
 
         // Initialize lists
         List<TestQuestionSetVM> allQuestionSets = new ArrayList<>();
-        List<TestQuestionVM> allQuestions = new ArrayList<>();
         List<TestQuestionItemVM> allQuestionItems = new ArrayList<>();
 
         // Fetch and set test parts
