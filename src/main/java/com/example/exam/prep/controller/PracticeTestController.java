@@ -8,6 +8,7 @@ import com.example.exam.prep.viewmodel.TestPartAttemptVM;
 import com.example.exam.prep.viewmodel.practice_test.PracticePartVM;
 import com.example.exam.prep.viewmodel.practice_test.PracticeTestResultVM;
 import com.example.exam.prep.viewmodel.practice_test.PracticeTestVM;
+import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.example.exam.prep.model.request.PracticeTestRequest;
+import com.example.exam.prep.constant.response.PracticeTestResponseConstants;
 
 @RestController
 @RequestMapping("/api/practice-tests")
@@ -120,14 +123,15 @@ public class PracticeTestController {
      * 
      * @param testId  The ID of the test
      * @param partIds Optional list of part IDs to include in the practice test
-     * @return PracticeTestVM containing the requested test parts
+     * @return ApiResponse containing PracticeTestVM with the requested test parts
      */
     @PostMapping("/tests/{testId}/practice")
-    public ResponseEntity<PracticeTestVM> getPracticeTestByParts(
+    public ResponseEntity<ApiResponse<PracticeTestVM>> getPracticeTestByParts(
             @PathVariable UUID testId,
-            @RequestBody(required = false) Set<UUID> partIds) {
-
+            @RequestBody(required = false) PracticeTestRequest request) {
+        
+        Set<UUID> partIds = request != null ? request.getPartIds() : null;
         PracticeTestVM practiceTestVM = practiceTestService.getPracticeTestByParts(testId, partIds);
-        return ResponseEntity.ok(practiceTestVM);
+        return ResponseEntity.ok(ApiResponse.success(practiceTestVM, PracticeTestResponseConstants.PRACTICE_TEST_RETRIEVED_SUCCESSFULLY.getMessage()));
     }
 }

@@ -8,7 +8,8 @@ public enum QuestionResponseMessage implements BaseResponseMessage {
     QUESTIONS_RETRIEVED("Questions retrieved successfully"),
     QUESTION_CREATED("Question created successfully"),
     QUESTION_UPDATED("Question updated successfully"),
-    QUESTION_DELETED("Question deleted successfully");
+    QUESTION_DELETED("Question deleted successfully"),
+    QUESTION_CREATE_ERROR("An error occurred while creating the question");
 
     private final String message;
 
