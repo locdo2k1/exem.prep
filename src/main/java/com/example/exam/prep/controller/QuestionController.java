@@ -63,7 +63,7 @@ public class QuestionController {
             Question savedQuestion = questionService.createQuestion(question);
             return ResponseEntity.ok(ApiResponse.success(savedQuestion, QUESTION_CREATED.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid input data", 400));
+            return ResponseEntity.internalServerError().body(ApiResponse.error(QUESTION_CREATE_ERROR.getMessage(), 500));
         }
     }
 
