@@ -7,6 +7,7 @@ import com.example.exam.prep.viewmodel.practice_test.PracticeTestResultVM;
 import com.example.exam.prep.viewmodel.practice_test.PracticeTestVM;
 
 import java.util.List;
+import com.example.exam.prep.model.request.SubmitPracticeTestPartRequest;
 import java.util.UUID;
 
 public interface IPracticeTestService {
@@ -20,11 +21,10 @@ public interface IPracticeTestService {
 
     /**
      * Submit a practice test part
-     * @param attemptId The ID of the test part attempt
-     * @param userId The ID of the user submitting the attempt
+     * @param request The request containing attempt details including user answers
      * @return The submitted test part attempt
      */
-    TestPartAttempt submitPracticeTestPart(UUID attemptId, UUID userId);
+    TestAttempt submitPracticeTestPart(SubmitPracticeTestPartRequest request);
 
     /**
      * Get all part attempts for a test attempt

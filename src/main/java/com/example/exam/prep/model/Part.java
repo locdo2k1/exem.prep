@@ -10,6 +10,9 @@ import java.util.Set;
 @Entity
 @Table(name = "parts")
 public class Part extends BaseEntity {
+    @Column(name = "number", nullable = false, unique = true, insertable = false, updatable = false)
+    private Integer number;
+    
     @Column(name = "name", nullable = false)
     private String name;
 

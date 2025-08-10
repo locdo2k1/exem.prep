@@ -10,9 +10,12 @@ import java.util.Set;
 @Entity
 @Table(name = "tests")
 public class Test extends BaseEntity {
+    @Column(name = "number", nullable = false, unique = true, insertable = false, updatable = false)
+    private Integer number;
+    
     @Column(name = "name", nullable = false)
     private String name;
-
+    
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 

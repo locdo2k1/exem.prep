@@ -1,10 +1,11 @@
 package com.example.exam.prep.service.impl;
 
 import com.example.exam.prep.model.*;
+import com.example.exam.prep.model.request.QuestionAnswerRequest;
+import com.example.exam.prep.model.request.SubmitPracticeTestPartRequest;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
 import jakarta.persistence.EntityNotFoundException;
 import com.example.exam.prep.exception.ResourceNotFoundException;
-import com.example.exam.prep.constant.status.TestPartStatus;
 import com.example.exam.prep.service.ITestAttemptService;
 import com.example.exam.prep.service.ITestPartAttemptService;
 import com.example.exam.prep.service.IPracticeTestService;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.exam.prep.viewmodel.practice_test.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,8 +49,66 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
     }
 
     @Override
-    public TestPartAttempt submitPracticeTestPart(UUID attemptId, UUID userId) {
-        return testPartAttemptService.submitPracticeAttempt(attemptId, userId);
+    public TestAttempt submitPracticeTestPart(SubmitPracticeTestPartRequest request) {
+        // Get the test attempt
+        TestAttempt testAttempt = new TestAttempt();
+        Test test = unitOfWork.getTestRepository().findById(request.getTestId()).orElseThrow(() -> new ResourceNotFoundException("Test not found with id: " + request.getTestId()));
+        testAttempt.setTest(test);
+
+        for (UUID partId : request.getListPartId()) {
+            var testPartAttempt = new TestPartAttempt();
+            testPartAttempt.setTestAttempt(testAttempt);
+            Part part = unitOfWork.getPartRepository().findById(partId).orElseThrow(() -> new ResourceNotFoundException("Part not found with id: " + partId));
+            testPartAttempt.setPart(part);
+            unitOfWork.getTestPartAttemptRepository().save(testPartAttempt);
+        }
+        
+        // Process the question answers if any
+        if (request.getQuestionAnswers() != null && !request.getQuestionAnswers().isEmpty()) {
+            for (QuestionAnswerRequest answer : request.getQuestionAnswers()) {
+                Question question = unitOfWork.getQuestionRepository().findById(answer.getQuestionId())
+                    .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + answer.getQuestionId()));
+                
+                QuestionResponse response = new QuestionResponse();
+                response.setTestAttempt(testAttempt);
+                response.setQuestion(question);
+                response.setResponseTime(LocalDateTime.now());
+                
+                // Handle text answer if present
+                if (answer.getAnswerText() != null && !answer.getAnswerText().trim().isEmpty()) {
+                    response.setTextAnswer(answer.getAnswerText());
+                }
+                
+                // Handle selected options if any
+                if (answer.getListSelectedOptionId() != null && !answer.getListSelectedOptionId().isEmpty()) {
+                    // Check if the question type is multiple choice based on the code
+                    if (question.getQuestionType() != null && "MULTIPLE_CHOICE".equals(question.getQuestionType().getCode())) {
+                        // For multiple choice, get all selected options
+                        Set<QuestionOption> selectedOptions = new HashSet<>();
+                        for (UUID optionId : answer.getListSelectedOptionId()) {
+                            QuestionOption option = unitOfWork.getQuestionOptionRepository().findById(optionId)
+                                .orElseThrow(() -> new EntityNotFoundException("Question option not found with id: " + optionId));
+                            selectedOptions.add(option);
+                        }
+                        response.setSelectedOptions(selectedOptions);
+                    } else {
+                        // For single choice, just take the first selected option
+                        if (!answer.getListSelectedOptionId().isEmpty()) {
+                            QuestionOption option = unitOfWork.getQuestionOptionRepository()
+                                .findById(answer.getListSelectedOptionId().get(0))
+                                .orElseThrow(() -> new EntityNotFoundException("Question option not found with id: " + answer.getListSelectedOptionId().get(0)));
+                            response.setSelectedOption(option);
+                        }
+                    }
+                }
+                
+                // Save the response
+                unitOfWork.getQuestionResponseRepository().save(response);
+            }
+        }
+        
+        // Submit the test part attempt
+        return testAttempt;
     }
 
     @Override
@@ -68,22 +128,12 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Get all part attempts for this test attempt
         List<TestPartAttempt> partAttempts = testPartAttemptService.getTestPartAttemptsByTestAttemptId(testAttemptId);
         
-        // Calculate overall score (only count submitted parts with scores)
-        double overallScore = partAttempts.stream()
-                .filter(a -> a.getStatus() == TestPartStatus.SUBMITTED && a.getScore() != null)
-                .mapToDouble(TestPartAttempt::getScore)
-                .average()
-                .orElse(0.0);
-                
-        // Round to 2 decimal places
-        overallScore = Math.round(overallScore * 100.0) / 100.0;
-
         // Create and return the result view model
         PracticeTestResultVM resultVM = new PracticeTestResultVM();
         resultVM.setTestAttemptId(testAttemptId);
         resultVM.setTestId(attempt.getTest().getId());
         resultVM.setUserId(userId);
-        resultVM.setOverallScore(overallScore);
+        resultVM.setOverallScore(0.0); // Default score since we removed score calculation
         resultVM.setPartResults(partAttempts.stream()
                 .map(TestPartAttemptVM::fromEntity)
                 .collect(Collectors.toList()));
@@ -195,7 +245,7 @@ private PracticeQuestionSetVM mapQuestionSetToVM(QuestionSet questionSet, int or
                     Question question = item.getQuestion();
                     if (question != null) {
                         return mapQuestionToVM(question, 
-                                item.getOrder() != null ? item.getOrder() : 0, 
+                                item.getOrder() != null ? item.getOrder() - 1 + order : 0, 
                                 item.getCustomScore());
                     }
                     return null;
@@ -295,7 +345,7 @@ public PracticePartVM getPracticePartById(UUID partId, UUID testId) {
                                     qVM.setText(question.getPrompt());
                                     // Get the question type name from the QuestionType entity
                                     qVM.setType(question.getQuestionType() != null ? question.getQuestionType().getName() : "");
-                                    qVM.setOrder(item.getOrder() != null ? item.getOrder() : 0);
+                                    qVM.setOrder(item.getOrder() != null ?  item.getOrder() + questionSetVM.getOrder() - 1 : 0);
                                     
                                     // Process options
                                     if (question.getOptions() != null) {
