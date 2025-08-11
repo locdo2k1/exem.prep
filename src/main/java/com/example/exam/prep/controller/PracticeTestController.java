@@ -53,11 +53,11 @@ public class PracticeTestController {
      * @param request The request containing attemptId and userId
      * @return The submitted test part attempt
      */
-    @PostMapping("/attempts/submit")
-    public ResponseEntity<ApiResponse<TestAttempt>> submitPracticeTestPart(
+    @PostMapping("attempts/submit")
+    public ResponseEntity<ApiResponse<TestAttemptVM>> submitPracticeTestPart(
             @RequestBody SubmitPracticeTestPartRequest request) {
         TestAttempt attempt = practiceTestService.submitPracticeTestPart(request);
-        return ResponseEntity.ok(ApiResponse.success(attempt, 
+        return ResponseEntity.ok(ApiResponse.success(TestAttemptVM.fromEntity(attempt), 
             PracticeTestResponseConstants.PRACTICE_TEST_RETRIEVED_SUCCESSFULLY.getMessage()));
     }
 
