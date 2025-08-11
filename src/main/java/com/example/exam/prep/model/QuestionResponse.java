@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -19,20 +20,11 @@ public class QuestionResponse extends BaseEntity {
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
+    @OneToMany(mappedBy = "questionResponse", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<QuestionResponseOption> selectedOptions = new HashSet<>();
+
     @Column(name = "text_answer", columnDefinition = "NVARCHAR(MAX)")
     private String textAnswer;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "selected_option_id")
-    private QuestionOption selectedOption;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "question_response_selected_options",
-        joinColumns = @JoinColumn(name = "response_id"),
-        inverseJoinColumns = @JoinColumn(name = "option_id")
-    )
-    private Set<QuestionOption> selectedOptions;
 
     @Column(name = "score")
     private Double score;

@@ -30,21 +30,18 @@ public interface ITestPartAttemptRepository extends GenericRepository<TestPartAt
      * @param testPartId The ID of the test part
      * @return List of test part attempts
      */
-    @Query("SELECT tpa FROM TestPartAttempt tpa WHERE tpa.testPart.id = :testPartId")
-    List<TestPartAttempt> findByTestPartId(@Param("testPartId") UUID testPartId);
+    @Query("SELECT tpa FROM TestPartAttempt tpa WHERE tpa.part.id = :partId")
+    List<TestPartAttempt> findByPartId(@Param("partId") UUID partId);
     
     /**
      * Finds the latest test part attempt for a specific test part and user.
      *
      * @param testPartId The ID of the test part
-     * @param userId The ID of the user
      * @return The latest test part attempt, if found
      */
     @Query("SELECT tpa FROM TestPartAttempt tpa " +
-           "WHERE tpa.testPart.id = :testPartId AND tpa.testAttempt.user.id = :userId " +
-           "ORDER BY tpa.startTime DESC")
-    List<TestPartAttempt> findLatestByTestPartAndUser(
-        @Param("testPartId") UUID testPartId,
-        @Param("userId") UUID userId
+           "WHERE tpa.part.id = :partId")
+    List<TestPartAttempt> findLatestByPartAndUser(
+        @Param("partId") UUID partId
     );
 }

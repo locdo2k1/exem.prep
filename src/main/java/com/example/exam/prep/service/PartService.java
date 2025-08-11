@@ -3,29 +3,47 @@ package com.example.exam.prep.service;
 import com.example.exam.prep.constant.response.PartResponseMessage;
 import com.example.exam.prep.exception.ResourceNotFoundException;
 import com.example.exam.prep.model.Part;
+import com.example.exam.prep.model.TestPart;
 import com.example.exam.prep.repository.IPartRepository;
+import com.example.exam.prep.repository.ITestPartRepository;
 import com.example.exam.prep.service.base.BaseService;
 import com.example.exam.prep.viewmodel.PartViewModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class PartService extends BaseService<Part> {
     private final IPartRepository partRepository;
+    private final ITestPartRepository testPartRepository;
 
-    public PartService(IPartRepository partRepository) {
+    @Autowired
+    public PartService(IPartRepository partRepository, ITestPartRepository testPartRepository) {
         super(partRepository);
         this.partRepository = partRepository;
+        this.testPartRepository = testPartRepository;
     }
 
     @Override
     public Optional<Part> findById(UUID id) {
         return partRepository.findById(id);
+    }
+
+    @Override
+    public List<Part> findAll() {
+        return partRepository.findAll();
+    }
+
+    public Optional<TestPart> getTestPartByPartIdAndTestId(UUID partId, UUID testId) {
+        return testPartRepository.findByPartIdAndTestId(partId, testId);
     }
 
     public Part getById(UUID id) {
@@ -67,6 +85,15 @@ public class PartService extends BaseService<Part> {
 
     public PartViewModel getPartViewModelById(UUID id) {
         return PartViewModel.fromModel(getById(id));
+    }
+    
+    @Transactional(readOnly = true)
+    public List<PartViewModel> getPartsByTestId(UUID testId) {
+        List<TestPart> testParts = testPartRepository.findByTestIdWithParts(testId);
+        return testParts.stream()
+                .map(TestPart::getPart)
+                .map(PartViewModel::fromModel)
+                .collect(Collectors.toList());
     }
 }
 

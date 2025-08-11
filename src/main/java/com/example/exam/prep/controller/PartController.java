@@ -12,6 +12,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -32,11 +33,17 @@ public class PartController {
         Page<PartViewModel> parts = partService.getAllPartViewModels(search, pageable);
         return new ResponseEntity<>(parts, HttpStatus.OK);
     }
-
+    
     @GetMapping("/{id}")
     public ResponseEntity<PartViewModel> getPartById(@PathVariable UUID id) {
         PartViewModel part = partService.getPartViewModelById(id);
         return new ResponseEntity<>(part, HttpStatus.OK);
+    }
+    
+    @GetMapping("/by-test/{testId}")
+    public ResponseEntity<List<PartViewModel>> getPartsByTestId(@PathVariable UUID testId) {
+        List<PartViewModel> parts = partService.getPartsByTestId(testId);
+        return new ResponseEntity<>(parts, HttpStatus.OK);
     }
 
     @PostMapping

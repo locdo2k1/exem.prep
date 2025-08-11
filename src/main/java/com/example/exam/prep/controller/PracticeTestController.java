@@ -9,16 +9,15 @@ import com.example.exam.prep.viewmodel.practice_test.PracticePartVM;
 import com.example.exam.prep.viewmodel.practice_test.PracticeTestResultVM;
 import com.example.exam.prep.viewmodel.practice_test.PracticeTestVM;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.example.exam.prep.model.request.PracticeTestRequest;
+import com.example.exam.prep.model.request.SubmitPracticeTestPartRequest;
 import com.example.exam.prep.constant.response.PracticeTestResponseConstants;
 
 @RestController
@@ -51,17 +50,15 @@ public class PracticeTestController {
     /**
      * Submit a practice test part
      * 
-     * @param attemptId The ID of the test part attempt
-     * @param userId    The ID of the user submitting the attempt
+     * @param request The request containing attemptId and userId
      * @return The submitted test part attempt
      */
-    @PostMapping("/attempts/{attemptId}/submit")
-    public ResponseEntity<TestPartAttemptVM> submitPracticeTestPart(
-            @PathVariable UUID attemptId,
-            @RequestParam UUID userId) {
-
-        TestPartAttempt attempt = practiceTestService.submitPracticeTestPart(attemptId, userId);
-        return ResponseEntity.ok(TestPartAttemptVM.fromEntity(attempt));
+    @PostMapping("attempts/submit")
+    public ResponseEntity<ApiResponse<TestAttemptVM>> submitPracticeTestPart(
+            @RequestBody SubmitPracticeTestPartRequest request) {
+        TestAttempt attempt = practiceTestService.submitPracticeTestPart(request);
+        return ResponseEntity.ok(ApiResponse.success(TestAttemptVM.fromEntity(attempt), 
+            PracticeTestResponseConstants.PRACTICE_TEST_RETRIEVED_SUCCESSFULLY.getMessage()));
     }
 
     /**
@@ -129,9 +126,10 @@ public class PracticeTestController {
     public ResponseEntity<ApiResponse<PracticeTestVM>> getPracticeTestByParts(
             @PathVariable UUID testId,
             @RequestBody(required = false) PracticeTestRequest request) {
-        
+
         Set<UUID> partIds = request != null ? request.getPartIds() : null;
         PracticeTestVM practiceTestVM = practiceTestService.getPracticeTestByParts(testId, partIds);
-        return ResponseEntity.ok(ApiResponse.success(practiceTestVM, PracticeTestResponseConstants.PRACTICE_TEST_RETRIEVED_SUCCESSFULLY.getMessage()));
+        return ResponseEntity.ok(ApiResponse.success(practiceTestVM,
+                PracticeTestResponseConstants.PRACTICE_TEST_RETRIEVED_SUCCESSFULLY.getMessage()));
     }
 }
