@@ -8,7 +8,6 @@ import jakarta.persistence.EntityNotFoundException;
 import com.example.exam.prep.exception.ResourceNotFoundException;
 import com.example.exam.prep.service.ITestAttemptService;
 import com.example.exam.prep.service.ITestPartAttemptService;
-import com.example.exam.prep.constant.QuestionTypeConstant;
 import com.example.exam.prep.service.IPracticeTestService;
 import com.example.exam.prep.service.PartService;
 import com.example.exam.prep.viewmodel.TestPartAttemptVM;
@@ -87,28 +86,51 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                 // Handle text answer if present
                 if (answer.getAnswerText() != null && !answer.getAnswerText().trim().isEmpty()) {
                     response.setTextAnswer(answer.getAnswerText());
+                    
+                    // For text answers, check if there's a correct answer defined
+                    if (question.getFillBlankAnswers() != null && !question.getFillBlankAnswers().isEmpty()) {
+                        // Check if any of the correct answers match the user's answer (case-insensitive)
+                        boolean isCorrect = question.getFillBlankAnswers().stream()
+                                .anyMatch(fillBlank -> answer.getAnswerText().trim().equalsIgnoreCase(fillBlank.getAnswerText().trim()));
+                        response.setIsCorrect(isCorrect);
+                        // Set score based on correctness
+                        response.setScore(isCorrect ? question.getScore() : 0.0);
+                    }
+                    // If no correct answer is defined, we can't determine correctness, so leave it as null
                 }
-
                 // Handle selected options if any
-                if (answer.getListSelectedOptionId() != null && !answer.getListSelectedOptionId().isEmpty()) {
-                    // Check if the question type is multiple choice based on the code
-                    if (question.getQuestionType() != null
-                            && QuestionTypeConstant.MULTIPLE_CHOICE.name()
-                                    .equals(question.getQuestionType().getCode())) {
-                        // For multiple choice, get all selected options
-                        Set<QuestionResponseOption> selectedOptions = new HashSet<>();
-                        for (UUID optionId : answer.getListSelectedOptionId()) {
-                            Option option = unitOfWork.getOptionRepository().findById(optionId)
-                                    .orElseThrow(() -> new EntityNotFoundException(
-                                            "Option not found with id: " + optionId));
-                            QuestionResponseOption qOption = new QuestionResponseOption();
-                            qOption.setOption(option);
-                            qOption.setQuestionResponse(response);
-                            selectedOptions.add(qOption);
-                        }
-                        response.setSelectedOptions(selectedOptions);
-                    } 
-                }
+                else if (answer.getListSelectedOptionId() != null && !answer.getListSelectedOptionId().isEmpty()) {
+                    // For multiple choice, get all selected options
+                    Set<QuestionResponseOption> selectedOptions = new HashSet<>();
+                    Set<UUID> selectedOptionIds = new HashSet<>();
+                    
+                    // Get all correct option IDs for this question
+                    List<Option> allOptions = unitOfWork.getOptionRepository().findByQuestionId(question.getId());
+                    Set<UUID> correctOptionIds = allOptions.stream()
+                            .filter(Option::isCorrect)
+                            .map(Option::getId)
+                            .collect(Collectors.toSet());
+                    
+                    // Track selected option IDs and create response options
+                    for (UUID optionId : answer.getListSelectedOptionId()) {
+                        Option option = unitOfWork.getOptionRepository().findById(optionId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                        "Option not found with id: " + optionId));
+                        QuestionResponseOption qOption = new QuestionResponseOption();
+                        qOption.setOption(option);
+                        qOption.setQuestionResponse(response);
+                        selectedOptions.add(qOption);
+                        selectedOptionIds.add(optionId);
+                    }
+                    response.setSelectedOptions(selectedOptions);
+                    
+                    // Check if the answer is correct (all correct options selected and no incorrect ones)
+                    boolean isCorrect = selectedOptionIds.containsAll(correctOptionIds) && 
+                                     correctOptionIds.containsAll(selectedOptionIds);
+                    response.setIsCorrect(isCorrect);
+                    // Set score based on correctness
+                    response.setScore(isCorrect ? question.getScore() : 0.0);
+                } 
 
                 // Save the response
                 unitOfWork.getQuestionResponseRepository().save(response);

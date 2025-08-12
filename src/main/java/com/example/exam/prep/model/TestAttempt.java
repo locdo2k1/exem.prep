@@ -31,4 +31,7 @@ public class TestAttempt extends BaseEntity {
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private TestStatus status;
+
+    @Column(name = "duration_seconds")
+    private Integer durationSeconds;
 }
