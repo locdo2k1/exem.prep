@@ -17,6 +17,6 @@ public interface IQuestionResponseRepository extends GenericRepository<QuestionR
      * @param testAttemptId The ID of the test attempt
      * @return List of question responses
      */
-    @Query("SELECT qr FROM QuestionResponse qr WHERE qr.testAttempt.id = :testAttemptId")
+    @Query("SELECT DISTINCT qr FROM QuestionResponse qr LEFT JOIN FETCH qr.selectedOptions WHERE qr.testAttempt.id = :testAttemptId")
     List<QuestionResponse> findByTestAttemptId(@Param("testAttemptId") UUID testAttemptId);
 }

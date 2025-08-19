@@ -15,6 +15,12 @@ import java.util.UUID;
 public class SubmitPracticeTestPartRequest {
     private UUID testId;
     private UUID userId;
+    
+    /**
+     * Duration taken to complete the test in seconds
+     */
+    private int duration;
+    
     private List<QuestionAnswerRequest> questionAnswers;
     private List<UUID> listPartId;
 }

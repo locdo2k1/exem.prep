@@ -52,6 +52,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         Test test = unitOfWork.getTestRepository().findById(request.getTestId())
                 .orElseThrow(() -> new ResourceNotFoundException("Test not found with id: " + request.getTestId()));
         testAttempt.setTest(test);
+        testAttempt.setDurationSeconds(request.getDuration());
         unitOfWork.getTestAttemptRepository().save(testAttempt);
 
         // Skip the loop if listPartId is null or empty
@@ -99,7 +100,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                     // If no correct answer is defined, we can't determine correctness, so leave it as null
                 }
                 // Handle selected options if any
-                else if (answer.getListSelectedOptionId() != null && !answer.getListSelectedOptionId().isEmpty()) {
+                else if (answer.getSelectedOptionIds() != null && !answer.getSelectedOptionIds().isEmpty()) {
                     // For multiple choice, get all selected options
                     Set<QuestionResponseOption> selectedOptions = new HashSet<>();
                     Set<UUID> selectedOptionIds = new HashSet<>();
@@ -112,7 +113,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                             .collect(Collectors.toSet());
                     
                     // Track selected option IDs and create response options
-                    for (UUID optionId : answer.getListSelectedOptionId()) {
+                    for (UUID optionId : answer.getSelectedOptionIds()) {
                         Option option = unitOfWork.getOptionRepository().findById(optionId)
                                 .orElseThrow(() -> new EntityNotFoundException(
                                         "Option not found with id: " + optionId));
