@@ -1,8 +1,12 @@
 package com.example.exam.prep.service;
 
+import com.example.exam.prep.vm.testresult.AnalysisQuestionsVM;
 import com.example.exam.prep.vm.testresult.AnswerResultVM;
+import com.example.exam.prep.vm.testresult.QuestionResultDTO;
 import com.example.exam.prep.vm.testresult.TestResultOverallVM;
+import com.example.exam.prep.vm.testresult.TestInfoVM;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -17,7 +21,7 @@ public interface ITestResultService {
      * @param attemptId The ID of the specific attempt
      * @return TestResultOverallVM containing the overall test results
      */
-    TestResultOverallVM getTestResultOverall(UUID testId, UUID attemptId);
+    TestResultOverallVM getTestResultOverall(UUID attemptId);
     
     /**
      * Retrieves detailed answers for a specific test attempt
@@ -26,4 +30,28 @@ public interface ITestResultService {
      * @return AnswerResultVM containing detailed answers and question information
      */
     AnswerResultVM getTestAnswers(UUID attemptId);
+    
+    /**
+     * Retrieves detailed analysis for a specific test attempt
+     *
+     * @param attemptId The ID of the specific attempt
+     * @return AnalysisQuestionsVM containing detailed analysis including question-wise performance, time spent, and skill-wise breakdown
+     */
+    AnalysisQuestionsVM getTestAttemptAnalysis(UUID attemptId);
+
+    /**
+     * Retrieves all questions in a test
+     *
+     * @param testId The ID of the test
+     * @return List of QuestionResultDTO containing all questions in the test
+     */
+    List<QuestionResultDTO> getAllQuestionsInTest(UUID testId);
+    
+    /**
+     * Retrieves test name and part names for a specific test attempt
+     *
+     * @param attemptId The ID of the specific attempt
+     * @return TestInfoVM containing test name and list of part names
+     */
+    TestInfoVM getTestInfo(UUID attemptId);
 }

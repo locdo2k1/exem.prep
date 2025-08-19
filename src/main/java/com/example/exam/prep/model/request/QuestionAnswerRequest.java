@@ -15,6 +15,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class QuestionAnswerRequest {
     private UUID questionId;
-    private List<UUID> listSelectedOptionId;
+    private List<UUID> selectedOptionIds;
     private String answerText;
 }

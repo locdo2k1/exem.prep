@@ -1,20 +1,23 @@
 package com.example.exam.prep.vm.testresult;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
-/**
- * View Model for representing a question in a test result
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuestionResultVM {
+public class QuestionResultDTO {
+    /**
+     * ID of the part this question belongs to
+     */
+    private Optional<UUID> PartId;
+
     /**
      * Order of the question in the test
      */
