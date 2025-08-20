@@ -1,6 +1,7 @@
 package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
+import com.example.exam.prep.vm.testresult.AnswerResultVM;
 import com.example.exam.prep.service.ITestResultService;
 import com.example.exam.prep.vm.testresult.AnalysisQuestionsVM;
 import com.example.exam.prep.vm.testresult.TestResultOverallVM;
@@ -40,9 +41,9 @@ public class TestResultController {
      * @return List of test answers with question and selected options
      */
     @GetMapping("/attempts/{attemptId}/answers")
-    public ResponseEntity<Object> getTestAnswers(
+    public ResponseEntity<ApiResponse<AnswerResultVM>> getTestAnswers(
             @PathVariable UUID attemptId) {
-        return ResponseEntity.ok(testResultService.getTestAnswers(attemptId));
+        return ResponseEntity.ok(ApiResponse.success(testResultService.getTestAnswers(attemptId)));
     }
 
     /**
