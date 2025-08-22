@@ -1,5 +1,7 @@
 package com.example.exam.prep.model;
 
+import org.hibernate.annotations.NotFound;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +15,8 @@ public class TestQuestionSetDetail extends BaseEntity {
     @JoinColumn(name = "test_id", nullable = false)
     private Test test;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     @JoinColumn(name = "question_set_id", nullable = false)
     private QuestionSet questionSet;
 

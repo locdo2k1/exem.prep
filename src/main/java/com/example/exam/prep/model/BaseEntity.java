@@ -1,6 +1,7 @@
 package com.example.exam.prep.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @MappedSuperclass
 @Getter
 @Setter
+@SQLRestriction("is_deleted = 0")
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
     @Id
