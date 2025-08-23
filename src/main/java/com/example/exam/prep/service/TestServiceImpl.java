@@ -355,7 +355,7 @@ public class TestServiceImpl implements ITestService {
                     .sorted(Comparator.comparing(TestPart::getOrderIndex))
                     .map(part -> {
                         TestPartDetailVM partVM = new TestPartDetailVM();
-                        partVM.setId(part.getId());
+                        partVM.setId(part.getPart().getId());
                         partVM.setTitle(part.getPart() != null ? part.getPart().getName() : "");
                         partVM.setDescription(part.getPart() != null ? part.getPart().getDescription() : "");
                         partVM.setOrder(part.getOrderIndex());

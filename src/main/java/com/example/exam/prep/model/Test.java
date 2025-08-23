@@ -26,7 +26,7 @@ public class Test extends BaseEntity {
     @JoinColumn(name = "test_category_id")
     private TestCategory testCategory;
 
-    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TestPart> testParts;
 
     @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
