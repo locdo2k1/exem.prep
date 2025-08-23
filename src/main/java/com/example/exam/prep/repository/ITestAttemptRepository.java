@@ -13,6 +13,15 @@ import java.util.UUID;
 public interface ITestAttemptRepository extends GenericRepository<TestAttempt> {
     
     /**
+     * Count distinct users who have attempted a specific test.
+     *
+     * @param testId The ID of the test
+     * @return Number of distinct users who attempted the test
+     */
+    @Query("SELECT COUNT(DISTINCT ta.user.id) FROM TestAttempt ta WHERE ta.test.id = :testId")
+    int countDistinctUsersByTestId(@Param("testId") UUID testId);
+    
+    /**
      * Find all test attempts for a specific test and user.
      *
      * @param testId The ID of the test

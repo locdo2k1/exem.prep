@@ -14,4 +14,26 @@ public interface ITestQuestionDetailRepository extends JpaRepository<TestQuestio
     
     @Query("SELECT tqd FROM TestQuestionDetail tqd JOIN FETCH tqd.question WHERE tqd.test.id = :testId ORDER BY tqd.order")
     List<TestQuestionDetail> findByTestId(@Param("testId") UUID testId);
+    
+    @Query("SELECT COUNT(tqd) FROM TestQuestionDetail tqd WHERE tqd.test.id = :testId")
+    int countByTestId(@Param("testId") UUID testId);
+    
+    @Query("SELECT COUNT(q2.id) FROM TestQuestionSetDetail tqsd " +
+           "JOIN tqsd.questionSet qs " +
+           "JOIN qs.questionSetItems qsi " +
+           "JOIN qsi.question q2 " +
+           "WHERE tqsd.test.id = :testId")
+    int countQuestionsInQuestionSetsByTestId(@Param("testId") UUID testId);
+    
+    @Query("SELECT COUNT(q1.id) + COALESCE((SELECT COUNT(q2.id) " +
+           "FROM TestPartQuestionSet tpqs " +
+           "JOIN tpqs.questionSet qs " +
+           "JOIN qs.questionSetItems qsi " +
+           "JOIN qsi.question q2 " +
+           "WHERE tpqs.testPart.test.id = :testId), 0) " +
+           "FROM TestPartQuestion tpq " +
+           "JOIN tpq.question q1 " +
+           "JOIN tpq.testPart tp " +
+           "WHERE tp.test.id = :testId")
+    int countQuestionsInTestPartsByTestId(@Param("testId") UUID testId);
 }
