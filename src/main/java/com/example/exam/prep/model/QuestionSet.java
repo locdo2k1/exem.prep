@@ -7,10 +7,13 @@ import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Setter
 @Getter
 @Entity
 @Table(name = "question_sets")
+@SQLRestriction("is_deleted = 0")
 public class QuestionSet extends BaseEntity {
     @Column(name = "title")
     private String title;

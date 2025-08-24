@@ -1,4 +1,8 @@
-package com.example.exam.prep.model;
+package com.example.exam.prep.model.viewmodels;
+
+import java.util.List;
+
+import com.example.exam.prep.viewmodel.TestPartInfoVM;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +15,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PracticeTestInfoVM {
+    // e.g., "Listening, Reading, Writing, Speaking"    
+    private List<String> skills;
+    // e.g., "IELTS"
+    private String testName;
     // e.g., "40 phút"
     private String duration;
     
@@ -28,4 +36,7 @@ public class PracticeTestInfoVM {
     
     // Additional notes about the test
     private String note;
+    
+    // List of test parts with their details
+    private List<TestPartInfoVM> testParts;
 }

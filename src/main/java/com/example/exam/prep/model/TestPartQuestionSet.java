@@ -16,6 +16,7 @@ public class TestPartQuestionSet extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "question_set_id", nullable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private QuestionSet questionSet;
 
     @Column(name = "display_order", nullable = false)

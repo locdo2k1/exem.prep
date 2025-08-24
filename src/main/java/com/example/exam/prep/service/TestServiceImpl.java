@@ -4,16 +4,12 @@ import com.example.exam.prep.model.*;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
 import com.example.exam.prep.model.viewmodels.question.QuestionTypeViewModel;
 import com.example.exam.prep.model.viewmodels.file.FileInfoViewModel;
-import com.example.exam.prep.vm.test.TestCreateVM;
-import com.example.exam.prep.vm.test.TestEditVM;
-import com.example.exam.prep.vm.test.TestPartVM;
-import com.example.exam.prep.vm.test.TestVM;
+
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
-import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 import com.example.exam.prep.model.viewmodels.option.OptionViewModel;
@@ -363,6 +359,7 @@ public class TestServiceImpl implements ITestService {
                         // Map questions in this part using TestPartQuestion
                         if (part.getTestPartQuestions() != null) {
                             part.getTestPartQuestions().stream()
+                                    .filter(detail -> detail.getQuestion() != null)
                                     .sorted(Comparator.comparing(TestPartQuestion::getDisplayOrder))
                                     .forEach(testPartQuestion -> {
                                         Question question = testPartQuestion.getQuestion();
@@ -426,6 +423,7 @@ public class TestServiceImpl implements ITestService {
                         // Map question sets in this part using TestPartQuestionSet
                         if (part.getTestPartQuestionSets() != null) {
                             part.getTestPartQuestionSets().stream()
+                                    .filter(detail -> detail.getQuestionSet() != null)
                                     .sorted(Comparator.comparing(TestPartQuestionSet::getDisplayOrder))
                                     .forEach(testPartQuestionSet -> {
                                         QuestionSet questionSet = testPartQuestionSet.getQuestionSet();
@@ -441,6 +439,7 @@ public class TestServiceImpl implements ITestService {
                                         if (questionSet.getQuestionSetItems() != null) {
                                             List<TestQuestionVM> questionVMs = questionSet.getQuestionSetItems()
                                                     .stream()
+                                                    .filter(item -> item.getQuestion() != null)
                                                     .sorted(Comparator.comparing(QuestionSetItem::getOrder))
                                                     .map(item -> {
                                                         Question question = item.getQuestion();
@@ -521,6 +520,7 @@ public class TestServiceImpl implements ITestService {
         // Map individual questions from testQuestionDetails
         if (test.getTestQuestionDetails() != null) {
             test.getTestQuestionDetails().stream()
+                    .filter(detail -> detail.getQuestion() != null)
                     .sorted(Comparator.comparing(TestQuestionDetail::getOrder))
                     .forEach(detail -> {
                         Question question = detail.getQuestion();
@@ -578,6 +578,7 @@ public class TestServiceImpl implements ITestService {
         // Map question sets from testQuestionSetDetails
         if (test.getTestQuestionSetDetails() != null) {
             test.getTestQuestionSetDetails().stream()
+                    .filter(detail -> detail.getQuestionSet() != null)
                     .sorted(Comparator.comparing(TestQuestionSetDetail::getOrder))
                     .forEach(detail -> {
                         QuestionSet questionSet = detail.getQuestionSet();
@@ -592,6 +593,7 @@ public class TestServiceImpl implements ITestService {
                         if (questionSet.getQuestionSetItems() != null) {
                             List<TestQuestionVM> questionVMs = questionSet.getQuestionSetItems().stream()
                                     .filter(QuestionSetItem::getIsActive)
+                                    .filter(item -> item.getQuestion() != null)
                                     .sorted(Comparator.comparing(QuestionSetItem::getOrder,
                                             Comparator.nullsLast(Comparator.naturalOrder())))
                                     .map(item -> {
