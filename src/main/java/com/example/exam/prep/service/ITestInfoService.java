@@ -1,7 +1,8 @@
 package com.example.exam.prep.service;
 
-import com.example.exam.prep.model.PracticeTestInfoVM;
 import java.util.UUID;
+
+import com.example.exam.prep.model.viewmodels.PracticeTestInfoVM;
 
 public interface ITestInfoService {
     /**

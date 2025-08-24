@@ -1,6 +1,6 @@
 package com.example.exam.prep.service;
 
-import com.example.exam.prep.model.PracticeTestInfoVM;
+import com.example.exam.prep.model.viewmodels.PracticeTestInfoVM;
 
 public interface TestInfoService {
     /**

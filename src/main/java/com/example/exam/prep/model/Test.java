@@ -21,6 +21,12 @@ public class Test extends BaseEntity {
 
     @Column(name = "skill")
     private String skill;
+    
+    @Column(name = "duration_minutes", nullable = false, columnDefinition = "int default 40")
+    private Integer durationMinutes = 40;
+    
+    @Column(name = "note", columnDefinition = "NVARCHAR(MAX)")
+    private String note;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "test_category_id")

@@ -2,6 +2,7 @@ package com.example.exam.prep.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,6 +13,7 @@ import java.util.Set;
 @Getter
 @Entity
 @Table(name = "questions")
+@SQLRestriction("is_deleted = false")
 public class Question extends BaseEntity {
     @JsonIgnore
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)

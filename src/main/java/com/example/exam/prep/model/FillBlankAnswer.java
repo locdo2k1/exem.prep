@@ -9,8 +9,9 @@ import lombok.Setter;
 @Entity
 @Table(name = "fill_blank_answers")
 public class FillBlankAnswer extends BaseEntity {
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Question question;
 
     @Column(name = "answer_text", nullable = false)

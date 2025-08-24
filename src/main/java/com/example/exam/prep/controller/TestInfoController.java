@@ -1,7 +1,7 @@
 package com.example.exam.prep.controller;
 
 import com.example.exam.prep.constant.response.TestResponseMessage;
-import com.example.exam.prep.model.PracticeTestInfoVM;
+import com.example.exam.prep.model.viewmodels.PracticeTestInfoVM;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.ITestInfoService;
 import org.springframework.http.ResponseEntity;
