@@ -142,7 +142,7 @@ public class TestInfoServiceImpl implements ITestInfoService {
     }
     
     private int calculateTestDuration(Test test) {
-        return test.getDurationMinutes() != null ? test.getDurationMinutes() : 40;
+        return test.getDurationMinutes() != null ? test.getDurationMinutes() : 0;
     }
     
     private String generateTestNote(Test test) {
