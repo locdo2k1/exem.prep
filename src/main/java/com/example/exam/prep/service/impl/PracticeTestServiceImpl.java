@@ -305,11 +305,14 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
 
         // Get the part with its relationships
         Part part = testPart.getPart();
+        if (part == null) {
+            throw new ResourceNotFoundException("Part not found for testPart: " + testPart.getId());
+        }
 
         // Create the view model
         PracticePartVM practicePartVM = new PracticePartVM();
         practicePartVM.setId(part.getId());
-        practicePartVM.setName(part.getName());
+        practicePartVM.setName(part.getName() != null ? part.getName() : "");
 
         // Initialize the list to hold both questions and question sets
         List<PracticeQuestionAndQuestionSetVM> questionsAndSets = new ArrayList<>();
@@ -317,19 +320,24 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Process individual questions in this test part
         if (testPart.getTestPartQuestions() != null) {
             testPart.getTestPartQuestions().stream()
-                    .sorted(Comparator.comparing(TestPartQuestion::getDisplayOrder))
+                    .filter(Objects::nonNull)
+                    .filter(tpq -> tpq.getQuestion() != null)
+                    .sorted(Comparator.comparing(TestPartQuestion::getDisplayOrder,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
                     .map(testPartQuestion -> {
                         Question question = testPartQuestion.getQuestion();
                         PracticeQuestionVM questionVM = new PracticeQuestionVM();
                         questionVM.setId(question.getId());
-                        questionVM.setText(question.getPrompt());
+                        questionVM.setText(question.getPrompt() != null ? question.getPrompt() : "");
                         questionVM.setType(
                                 question.getQuestionType() != null ? question.getQuestionType().getName() : "");
-                        questionVM.setOrder(testPartQuestion.getDisplayOrder());
+                        Integer displayOrder = testPartQuestion.getDisplayOrder();
+                        questionVM.setOrder(displayOrder != null ? displayOrder : 0);
 
                         // Process options
                         if (question.getOptions() != null) {
                             List<PracticeOptionVM> options = question.getOptions().stream()
+                                    .filter(Objects::nonNull)
                                     .map(option -> {
                                         PracticeOptionVM optionVM = new PracticeOptionVM();
                                         optionVM.setId(option.getId());
@@ -344,7 +352,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
 
                         PracticeQuestionAndQuestionSetVM vm = new PracticeQuestionAndQuestionSetVM();
                         vm.setId(question.getId());
-                        vm.setOrder(testPartQuestion.getDisplayOrder());
+                        vm.setOrder(displayOrder != null ? displayOrder : 0);
                         vm.setQuestion(questionVM);
                         return vm;
                     })
@@ -354,35 +362,43 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Process question sets in this test part
         if (testPart.getTestPartQuestionSets() != null) {
             testPart.getTestPartQuestionSets().stream()
-                    .sorted(Comparator.comparing(TestPartQuestionSet::getDisplayOrder))
+                    .filter(Objects::nonNull)
+                    .filter(tpqs -> tpqs.getQuestionSet() != null)
+                    .sorted(Comparator.comparing(TestPartQuestionSet::getDisplayOrder,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
                     .map(testPartQuestionSet -> {
                         QuestionSet questionSet = testPartQuestionSet.getQuestionSet();
                         PracticeQuestionSetVM questionSetVM = new PracticeQuestionSetVM();
                         questionSetVM.setId(questionSet.getId());
-                        questionSetVM.setTitle(questionSet.getTitle());
-                        questionSetVM.setOrder(testPartQuestionSet.getDisplayOrder());
+                        questionSetVM.setTitle(questionSet.getTitle() != null ? questionSet.getTitle() : "");
+                        Integer qsDisplayOrder = testPartQuestionSet.getDisplayOrder();
+                        int orderVal = qsDisplayOrder != null ? qsDisplayOrder : 0;
+                        questionSetVM.setOrder(orderVal);
 
                         // Process questions in this question set
                         if (questionSet.getQuestionSetItems() != null) {
                             List<PracticeQuestionVM> questions = questionSet.getQuestionSetItems().stream()
-                                    .filter(QuestionSetItem::getIsActive)
-                                    .sorted(Comparator.comparing(QuestionSetItem::getOrder))
+                                    .filter(Objects::nonNull)
+                                    .filter(item -> Boolean.TRUE.equals(item.getIsActive()))
+                                    .filter(item -> item.getQuestion() != null)
+                                    .sorted(Comparator.comparing(QuestionSetItem::getOrder,
+                                            Comparator.nullsLast(Comparator.naturalOrder())))
                                     .map(item -> {
                                         Question question = item.getQuestion();
                                         PracticeQuestionVM qVM = new PracticeQuestionVM();
                                         qVM.setId(question.getId());
-                                        qVM.setText(question.getPrompt());
+                                        qVM.setText(question.getPrompt() != null ? question.getPrompt() : "");
                                         // Get the question type name from the QuestionType entity
                                         qVM.setType(question.getQuestionType() != null
                                                 ? question.getQuestionType().getName()
                                                 : "");
-                                        qVM.setOrder(
-                                                item.getOrder() != null ? item.getOrder() + questionSetVM.getOrder() - 1
-                                                        : 0);
+                                        Integer itemOrder = item.getOrder();
+                                        qVM.setOrder(itemOrder != null ? itemOrder + orderVal - 1 : 0);
 
                                         // Process options
                                         if (question.getOptions() != null) {
                                             List<PracticeOptionVM> options = question.getOptions().stream()
+                                                    .filter(Objects::nonNull)
                                                     .map(opt -> new PracticeOptionVM(opt.getId(), opt.getText(),
                                                             opt.getOrder()))
                                                     .collect(Collectors.toList());
@@ -397,7 +413,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
 
                         PracticeQuestionAndQuestionSetVM vm = new PracticeQuestionAndQuestionSetVM();
                         vm.setId(questionSet.getId());
-                        vm.setOrder(testPartQuestionSet.getDisplayOrder());
+                        vm.setOrder(orderVal);
                         vm.setQuestionSet(questionSetVM);
                         return vm;
                     })
@@ -430,9 +446,11 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         if (test.getTestParts() != null && !test.getTestParts().isEmpty()) {
             // Filter parts if partIds is provided and not empty, and sort by orderIndex
             List<TestPart> testParts = test.getTestParts().stream()
-                    .filter(testPart -> partIds == null || partIds.isEmpty() ||
-                            partIds.contains(testPart.getPart().getId()))
-                    .sorted(Comparator.comparing(TestPart::getOrderIndex))
+                    .filter(Objects::nonNull)
+                    .filter(tp -> tp.getPart() != null)
+                    .filter(tp -> partIds == null || partIds.isEmpty() ||
+                            partIds.contains(tp.getPart().getId()))
+                    .sorted(Comparator.comparing(TestPart::getOrderIndex, Comparator.nullsLast(Comparator.naturalOrder())))
                     .collect(Collectors.toList());
 
             // Process each test part to get its details and questions/question sets
@@ -449,14 +467,18 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Map individual questions from testQuestionDetails
         if (test.getTestQuestionDetails() != null) {
             test.getTestQuestionDetails().stream()
-                    .sorted(Comparator.comparing(TestQuestionDetail::getOrder))
+                    .filter(Objects::nonNull)
+                    .filter(detail -> detail.getQuestion() != null)
+                    .sorted(Comparator.comparing(TestQuestionDetail::getOrder,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
                     .map(detail -> {
                         Question question = detail.getQuestion();
-                        PracticeQuestionVM questionVM = mapQuestionToVM(question, detail.getOrder(), null);
+                        int order = detail.getOrder() != null ? detail.getOrder() : 0;
+                        PracticeQuestionVM questionVM = mapQuestionToVM(question, order, null);
 
                         PracticeQuestionAndQuestionSetVM itemVM = new PracticeQuestionAndQuestionSetVM();
                         itemVM.setId(question.getId());
-                        itemVM.setOrder(detail.getOrder());
+                        itemVM.setOrder(order);
                         itemVM.setQuestion(questionVM);
                         return itemVM;
                     })
@@ -466,14 +488,18 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Map question sets from testQuestionSetDetails
         if (test.getTestQuestionSetDetails() != null) {
             test.getTestQuestionSetDetails().stream()
-                    .sorted(Comparator.comparing(TestQuestionSetDetail::getOrder))
+                    .filter(Objects::nonNull)
+                    .filter(detail -> detail.getQuestionSet() != null)
+                    .sorted(Comparator.comparing(TestQuestionSetDetail::getOrder,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
                     .map(detail -> {
                         QuestionSet questionSet = detail.getQuestionSet();
-                        PracticeQuestionSetVM setVM = mapQuestionSetToVM(questionSet, detail.getOrder());
+                        int order = detail.getOrder() != null ? detail.getOrder() : 0;
+                        PracticeQuestionSetVM setVM = mapQuestionSetToVM(questionSet, order);
 
                         PracticeQuestionAndQuestionSetVM itemVM = new PracticeQuestionAndQuestionSetVM();
                         itemVM.setId(questionSet.getId());
-                        itemVM.setOrder(detail.getOrder());
+                        itemVM.setOrder(order);
                         itemVM.setQuestionSet(setVM);
                         return itemVM;
                     })
