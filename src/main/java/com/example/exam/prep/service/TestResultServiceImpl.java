@@ -141,63 +141,80 @@ public class TestResultServiceImpl implements ITestResultService {
         }
 
         @Override
-        public AnalysisQuestionsVM getTestAttemptAnalysis(UUID attemptId) {
-                TestAttempt testAttempt = unitOfWork.getTestAttemptRepository().findById(attemptId)
-                                .orElseThrow(() -> new RuntimeException("Test attempt not found for ID: " + attemptId));
+public AnalysisQuestionsVM getTestAttemptAnalysis(UUID attemptId) {
+    TestAttempt testAttempt = unitOfWork.getTestAttemptRepository().findById(attemptId)
+            .orElseThrow(() -> new RuntimeException("Test attempt not found for ID: " + attemptId));
 
-                questionResponses = unitOfWork.getQuestionResponseRepository().findByTestAttemptId(attemptId);
+    questionResponses = unitOfWork.getQuestionResponseRepository().findByTestAttemptId(attemptId);
 
-                // Get all questions in the test
-                List<QuestionResultDTO> allQuestions = getAllQuestionsInTest(testAttempt.getTest().getId());
+    // Get all questions in the test
+    List<QuestionResultDTO> allQuestions = getAllQuestionsInTest(testAttempt.getTest().getId());
 
-                // Convert questions to analysis categories
-                List<AnalysisQuesCategory> analysisCategories = convertToAnalysisByCategory(allQuestions);
+    // Get attempted part IDs
+    List<UUID> attemptedPartIds = unitOfWork.getTestPartAttemptRepository()
+            .findByTestAttemptId(attemptId)
+            .stream()
+            .map(testPartAttempt -> testPartAttempt.getPart().getId())
+            .collect(Collectors.toList());
 
-                // Separate general questions (without partId) from part-specific questions
-                Map<Boolean, List<AnalysisQuesCategory>> partitionedCategories = analysisCategories.stream()
-                                .collect(Collectors.partitioningBy(cat -> cat.getPartId().isPresent()));
+    // Convert all questions to analysis categories
+    List<AnalysisQuesCategory> allAnalysisCategories = convertToAnalysisByCategory(allQuestions);
 
-                // Get general questions for overall analysis
-                List<AnalysisQuesCategory> overallCategories = partitionedCategories.get(false);
+    // Filter categories to only include attempted parts or categories without a part
+    List<AnalysisQuesCategory> filteredCategories = allAnalysisCategories.stream()
+            .filter(category -> 
+                !category.getPartId().isPresent() ||  // Keep categories without a part
+                (category.getPartId().isPresent() && 
+                 attemptedPartIds.contains(category.getPartId().get()))  // Only keep categories for attempted parts
+            )
+            .collect(Collectors.toList());
 
-                // Process part-specific questions
-                Map<Optional<UUID>, List<AnalysisQuesCategory>> categoriesByPart = partitionedCategories.get(true)
-                                .stream()
-                                .collect(Collectors.groupingBy(AnalysisQuesCategory::getPartId));
+    // Separate general questions (without partId) from part-specific questions
+    Map<Boolean, List<AnalysisQuesCategory>> partitionedCategories = filteredCategories.stream()
+            .collect(Collectors.partitioningBy(cat -> cat.getPartId().isPresent()));
 
-                // Create part analysis for each part
-                List<AnalysisPartVM> parts = categoriesByPart.entrySet().stream()
-                                .map(entry -> {
-                                        UUID partId = entry.getKey().orElse(null);
-                                        List<AnalysisQuesCategory> categories = entry.getValue();
+    // Rest of the method remains the same...
+    // Get general questions for overall analysis
+    List<AnalysisQuesCategory> overallCategories = partitionedCategories.get(false);
 
-                                        AnalysisPartVM partVM = new AnalysisPartVM();
-                                        // Find part name if partId exists
-                                        Part part = unitOfWork.getPartRepository().findById(partId)
-                                                        .orElse(null);
-                                        TestPart testPart = unitOfWork.getTestPartRepository()
-                                                        .findByPartIdAndTestId(partId,
-                                                                        testAttempt.getTest().getId())
-                                                        .orElse(null);
-                                        if (part != null) {
-                                                partVM.setPartName(part.getName());
-                                        }
+    // Process part-specific questions
+    Map<Optional<UUID>, List<AnalysisQuesCategory>> categoriesByPart = partitionedCategories.get(true)
+            .stream()
+            .collect(Collectors.groupingBy(AnalysisQuesCategory::getPartId));
 
-                                        if (testPart != null) {
-                                                partVM.setOrder(testPart.getOrderIndex());
-                                        }
-                                        partVM.setCategories(categories);
-                                        return partVM;
-                                })
-                                .collect(Collectors.toList());
+    // Create part analysis for each part
+    List<AnalysisPartVM> parts = categoriesByPart.entrySet().stream()
+            .map(entry -> {
+                UUID partId = entry.getKey().orElse(null);
+                List<AnalysisQuesCategory> categories = entry.getValue();
 
-                return AnalysisQuestionsVM.builder()
-                                .parts(parts.stream()
-                                                .sorted(Comparator.comparing(AnalysisPartVM::getOrder))
-                                                .collect(Collectors.toList()))
-                                .overall(overallCategories)
-                                .build();
-        }
+                AnalysisPartVM partVM = new AnalysisPartVM();
+                // Find part name if partId exists
+                Part part = unitOfWork.getPartRepository().findById(partId)
+                        .orElse(null);
+                TestPart testPart = unitOfWork.getTestPartRepository()
+                        .findByPartIdAndTestId(partId,
+                                testAttempt.getTest().getId())
+                        .orElse(null);
+                if (part != null) {
+                    partVM.setPartName(part.getName());
+                }
+
+                if (testPart != null) {
+                    partVM.setOrder(testPart.getOrderIndex());
+                }
+                partVM.setCategories(categories);
+                return partVM;
+            })
+            .collect(Collectors.toList());
+
+    return AnalysisQuestionsVM.builder()
+            .parts(parts.stream()
+                    .sorted(Comparator.comparing(AnalysisPartVM::getOrder))
+                    .collect(Collectors.toList()))
+            .overall(overallCategories)
+            .build();
+}
 
         @Override
         public AnswerResultVM getTestAnswers(UUID attemptId) {
