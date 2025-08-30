@@ -9,6 +9,8 @@ import java.util.List;
 @Setter
 public class TestAttemptInfoVM {
    private Instant takeDate;
+   // Localized representation of takeDate based on requested timezone (e.g., tz=Asia/Ho_Chi_Minh)
+   private String takeDateLocal;
    private List<String> parts;
    private Boolean isPractice;
    private Integer correctAnswers;

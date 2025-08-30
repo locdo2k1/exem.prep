@@ -16,6 +16,10 @@ import com.example.exam.prep.service.ITestInfoService;
 import com.example.exam.prep.viewmodel.TestPartInfoVM;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -195,7 +199,7 @@ public class TestInfoServiceImpl implements ITestInfoService {
     }
 
     @Override
-    public List<TestAttemptInfoVM> getTestAttempts(UUID testId, UUID userId) {
+    public List<TestAttemptInfoVM> getTestAttempts(UUID testId, UUID userId, String tz) {
         List<TestAttempt> attempts;
         if (userId != null) {
             attempts = testAttemptRepository.findByTestIdAndUserId(testId, userId);
@@ -203,14 +207,21 @@ public class TestInfoServiceImpl implements ITestInfoService {
             attempts = testAttemptRepository.findByTestId(testId);
         }
 
+        ZoneId zone = resolveZoneId(tz);
+
         return attempts.stream()
-                .map(this::mapToTestAttemptInfoVM)
+                .map(attempt -> mapToTestAttemptInfoVM(attempt, zone))
                 .collect(Collectors.toList());
     }
 
-    private TestAttemptInfoVM mapToTestAttemptInfoVM(TestAttempt attempt) {
+    private TestAttemptInfoVM mapToTestAttemptInfoVM(TestAttempt attempt, ZoneId zone) {
         TestAttemptInfoVM vm = new TestAttemptInfoVM();
-        vm.setTakeDate(attempt.getInsertedAt());
+        Instant inserted = attempt.getInsertedAt();
+        vm.setTakeDate(inserted);
+        if (inserted != null) {
+            ZonedDateTime zdt = ZonedDateTime.ofInstant(inserted, zone);
+            vm.setTakeDateLocal(DateTimeFormatter.ofPattern("dd/MM/yyyy").format(zdt));
+        }
         vm.setIsPractice(attempt.getIsPractice());
         vm.setStartTime(attempt.getStartTime());
         vm.setEndTime(attempt.getEndTime());
@@ -239,6 +250,17 @@ public class TestInfoServiceImpl implements ITestInfoService {
         vm.setCorrectAnswers(0); // Placeholder
 
         return vm;
+    }
+
+    private ZoneId resolveZoneId(String tz) {
+        try {
+            if (tz != null && !tz.isBlank()) {
+                return ZoneId.of(tz);
+            }
+        } catch (Exception ignored) {
+            // Fallback to system default if invalid tz is provided
+        }
+        return ZoneId.systemDefault();
     }
 
     private int calculateTotalQuestionsFromParts(Test test, Set<TestPartAttempt> partAttempts) {

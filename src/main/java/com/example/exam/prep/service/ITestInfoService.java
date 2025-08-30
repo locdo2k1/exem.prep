@@ -31,7 +31,8 @@ public interface ITestInfoService {
      * 
      * @param testId The ID of the test
      * @param userId Optional user ID to filter attempts
+     * @param tz Optional IANA timezone ID (e.g., "Asia/Ho_Chi_Minh") to format local takeDate
      * @return List of test attempts with details
      */
-    List<TestAttemptInfoVM> getTestAttempts(UUID testId, UUID userId);
+    List<TestAttemptInfoVM> getTestAttempts(UUID testId, UUID userId, String tz);
 }

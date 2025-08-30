@@ -57,14 +57,16 @@ public class TestInfoController {
      * @param testId The ID of the test
      * @param userId The ID of the user (optional, if not provided returns all
      *               attempts for the test)
+     * @param tz Optional IANA timezone (e.g., Asia/Ho_Chi_Minh) for localizing takeDate
      * @return List of TestAttemptInfo with attempt details
      */
     @GetMapping("/{testId}/attempts")
     public ResponseEntity<ApiResponse<List<TestAttemptInfoVM>>> getTestAttempts(
             @PathVariable UUID testId,
-            @RequestParam(required = false) UUID userId) {
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) String tz) {
         try {
-            List<TestAttemptInfoVM> attempts = testInfoService.getTestAttempts(testId, userId);
+            List<TestAttemptInfoVM> attempts = testInfoService.getTestAttempts(testId, userId, tz);
             return ResponseEntity
                     .ok(ApiResponse.success(attempts, TestResponseMessage.TEST_ATTEMPTS_RETRIEVED.getMessage()));
         } catch (Exception e) {
