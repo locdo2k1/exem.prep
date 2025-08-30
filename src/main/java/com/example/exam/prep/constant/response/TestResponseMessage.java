@@ -11,7 +11,8 @@ public enum TestResponseMessage implements BaseResponseMessage {
     TEST_DELETED("Test deleted successfully"),
     TEST_RETRIEVED("Test retrieved successfully"),
     TESTS_RETRIEVED("Tests retrieved successfully"),
-    TEST_NOT_FOUND("Test not found");
+    TEST_NOT_FOUND("Test not found"),
+    TEST_ATTEMPTS_RETRIEVED("Test attempts retrieved successfully");
 
     @Getter
     private final String message;

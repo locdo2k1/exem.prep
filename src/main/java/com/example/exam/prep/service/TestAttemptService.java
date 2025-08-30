@@ -12,7 +12,7 @@ import com.example.exam.prep.vm.test.TestVM;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,7 +61,7 @@ public class TestAttemptService extends BaseService<TestAttempt> implements ITes
         TestAttempt attempt = new TestAttempt();
         attempt.setUser(user);
         attempt.setTest(test);
-        attempt.setStartTime(LocalDateTime.now());
+        attempt.setStartTime(Instant.now());
         attempt.setStatus(TestStatus.ONGOING);
         
         return getRepository().save(attempt);
@@ -77,7 +77,7 @@ public class TestAttemptService extends BaseService<TestAttempt> implements ITes
         }
         
         attempt.setStatus(TestStatus.SUBMITTED);
-        attempt.setEndTime(LocalDateTime.now());
+        attempt.setEndTime(Instant.now());
         
         return getRepository().save(attempt);
     }
@@ -89,7 +89,7 @@ public class TestAttemptService extends BaseService<TestAttempt> implements ITes
         
         attempt.setStatus(status);
         if (status == TestStatus.SUBMITTED && attempt.getEndTime() == null) {
-            attempt.setEndTime(LocalDateTime.now());
+            attempt.setEndTime(Instant.now());
         }
         
         return getRepository().save(attempt);

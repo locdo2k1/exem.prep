@@ -4,7 +4,9 @@ import com.example.exam.prep.constant.status.TestStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "test_attempts")
@@ -20,10 +22,10 @@ public class TestAttempt extends BaseEntity {
     private Test test;
 
     @Column(name = "start_time")
-    private LocalDateTime startTime;
+    private Instant startTime;
 
     @Column(name = "end_time")
-    private LocalDateTime endTime;
+    private Instant endTime;
 
     @Column(name = "total_score")
     private Double totalScore;
@@ -34,4 +36,10 @@ public class TestAttempt extends BaseEntity {
 
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
+
+    @Column(name = "is_practice", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isPractice = false;
+
+    @OneToMany(mappedBy = "testAttempt", cascade = CascadeType.ALL)
+    private Set<TestPartAttempt> testPartAttempts = new HashSet<>();
 }
