@@ -44,11 +44,25 @@ public class QuestionSet extends BaseEntity {
     private Set<TestPartQuestionSet> testPartQuestionSets = new HashSet<>();
 
     // Constructors
-    public QuestionSet() {}
+    public QuestionSet() {
+    }
 
     public QuestionSet(String title, String description, String imageUrl) {
         this.title = title;
         this.description = description;
         this.imageUrl = imageUrl;
+    }
+
+    /**
+     * Get all questions in this question set through the questionSetItems
+     * relationship
+     * 
+     * @return Set of questions in this question set
+     */
+    @JsonIgnore
+    public Set<Question> getQuestions() {
+        return questionSetItems.stream()
+                .map(QuestionSetItem::getQuestion)
+                .collect(java.util.stream.Collectors.toSet());
     }
 }

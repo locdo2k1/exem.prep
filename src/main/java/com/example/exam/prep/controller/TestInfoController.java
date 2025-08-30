@@ -2,10 +2,12 @@ package com.example.exam.prep.controller;
 
 import com.example.exam.prep.constant.response.TestResponseMessage;
 import com.example.exam.prep.model.viewmodels.PracticeTestInfoVM;
+import com.example.exam.prep.model.viewmodels.TestAttemptInfoVM;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.ITestInfoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,9 +27,9 @@ public class TestInfoController {
      * @return PracticeTestInfo with test details
      */
     @GetMapping("/{testId}")
-    public ResponseEntity<ApiResponse<PracticeTestInfoVM>> getTestInfo(@PathVariable UUID testId) {
+    public ResponseEntity<ApiResponse<PracticeTestInfoVM>> getPracticeTestInfo(@PathVariable UUID testId) {
         try {
-            PracticeTestInfoVM testInfo = testInfoService.getTestInfo(testId);
+            PracticeTestInfoVM testInfo = testInfoService.getPracticeTestInfo(testId);
             return ResponseEntity.ok(ApiResponse.success(testInfo, TestResponseMessage.TEST_RETRIEVED.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), 400));
@@ -44,6 +46,29 @@ public class TestInfoController {
         try {
             String tests = testInfoService.getAllTests();
             return ResponseEntity.ok(ApiResponse.success(tests, TestResponseMessage.TESTS_RETRIEVED.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), 400));
+        }
+    }
+
+    /**
+     * Get test attempt information for a specific test and user
+     * 
+     * @param testId The ID of the test
+     * @param userId The ID of the user (optional, if not provided returns all
+     *               attempts for the test)
+     * @param tz Optional IANA timezone (e.g., Asia/Ho_Chi_Minh) for localizing takeDate
+     * @return List of TestAttemptInfo with attempt details
+     */
+    @GetMapping("/{testId}/attempts")
+    public ResponseEntity<ApiResponse<List<TestAttemptInfoVM>>> getTestAttempts(
+            @PathVariable UUID testId,
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) String tz) {
+        try {
+            List<TestAttemptInfoVM> attempts = testInfoService.getTestAttempts(testId, userId, tz);
+            return ResponseEntity
+                    .ok(ApiResponse.success(attempts, TestResponseMessage.TEST_ATTEMPTS_RETRIEVED.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), 400));
         }
