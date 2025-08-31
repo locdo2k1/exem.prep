@@ -1,16 +1,17 @@
 package com.example.exam.prep.service.impl;
 
-import com.example.exam.prep.model.Test;
-import com.example.exam.prep.model.TestAttempt;
-import com.example.exam.prep.model.TestPart;
+import com.example.exam.prep.model.*;
+import com.example.exam.prep.repository.IQuestionResponseRepository;
 import com.example.exam.prep.model.TestPartAttempt;
 import com.example.exam.prep.model.TestPartQuestion;
 import com.example.exam.prep.model.TestPartQuestionSet;
+import com.example.exam.prep.model.User;
 import com.example.exam.prep.model.viewmodels.PracticeTestInfoVM;
 import com.example.exam.prep.model.viewmodels.TestAttemptInfoVM;
 import com.example.exam.prep.repository.ITestAttemptRepository;
 import com.example.exam.prep.repository.ITestQuestionDetailRepository;
 import com.example.exam.prep.repository.ITestRepository;
+import com.example.exam.prep.repository.IUserRepository;
 import com.example.exam.prep.repository.ITestPartRepository;
 import com.example.exam.prep.service.ITestInfoService;
 import com.example.exam.prep.viewmodel.TestPartInfoVM;
@@ -20,12 +21,18 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 @Service
 @Transactional
 public class TestInfoServiceImpl implements ITestInfoService {
@@ -33,16 +40,22 @@ public class TestInfoServiceImpl implements ITestInfoService {
     private final ITestPartRepository testPartRepository;
     private final ITestQuestionDetailRepository testQuestionDetailRepository;
     private final ITestAttemptRepository testAttemptRepository;
+    private final IUserRepository userRepository;
+    private final IQuestionResponseRepository questionResponseRepository;
 
     public TestInfoServiceImpl(
             ITestRepository testRepository,
             ITestPartRepository testPartRepository,
             ITestQuestionDetailRepository testQuestionDetailRepository,
-            ITestAttemptRepository testAttemptRepository) {
+            ITestAttemptRepository testAttemptRepository,
+            IUserRepository userRepository,
+            IQuestionResponseRepository questionResponseRepository) {
         this.testRepository = testRepository;
         this.testPartRepository = testPartRepository;
         this.testQuestionDetailRepository = testQuestionDetailRepository;
         this.testAttemptRepository = testAttemptRepository;
+        this.userRepository = userRepository;
+        this.questionResponseRepository = questionResponseRepository;
     }
 
     @Override
@@ -200,12 +213,28 @@ public class TestInfoServiceImpl implements ITestInfoService {
 
     @Override
     public List<TestAttemptInfoVM> getTestAttempts(UUID testId, UUID userId, String tz) {
-        List<TestAttempt> attempts;
-        if (userId != null) {
-            attempts = testAttemptRepository.findByTestIdAndUserId(testId, userId);
-        } else {
-            attempts = testAttemptRepository.findByTestId(testId);
+        // First try to get user ID from security context if not provided
+        if (userId == null) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof User) {
+                User userDetails = 
+                    (User) authentication.getPrincipal();
+                try {
+                    userId = userRepository.findByUsername(userDetails.getUsername()).getId();
+                } catch (IllegalArgumentException e) {
+                    // If username is not a valid UUID, return empty list
+                    return Collections.emptyList();
+                }
+            } else {
+                // If no authentication or invalid principal, return empty list
+                return Collections.emptyList();
+            }
         }
+        
+        // Now fetch attempts with the resolved user ID and sort by creation date (newest first)
+        List<TestAttempt> attempts = testAttemptRepository.findByTestIdAndUserId(testId, userId).stream()
+                .sorted(Comparator.comparing(TestAttempt::getInsertedAt).reversed())
+                .collect(Collectors.toList());
 
         ZoneId zone = resolveZoneId(tz);
 
@@ -227,9 +256,21 @@ public class TestInfoServiceImpl implements ITestInfoService {
         vm.setEndTime(attempt.getEndTime());
         vm.setDurationSeconds(attempt.getDurationSeconds());
 
-        // Get parts
+        // Get test parts and sort by orderIndex from TestPart
         List<String> parts = attempt.getTestPartAttempts().stream()
-                .map(partAttempt -> partAttempt.getPart().getName())
+                .map(partAttempt -> {
+                    // Get the TestPart for this attempt's part
+                    TestPart testPart = partAttempt.getPart().getTestParts().stream()
+                            .filter(tp -> tp.getTest().equals(attempt.getTest()))
+                            .findFirst()
+                            .orElse(null);
+                    return testPart != null ? 
+                            Map.entry(testPart.getOrderIndex(), partAttempt.getPart().getName()) : 
+                            null;
+                })
+                .filter(Objects::nonNull)
+                .sorted(Map.Entry.comparingByKey(Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
         vm.setParts(parts);
 
@@ -245,9 +286,9 @@ public class TestInfoServiceImpl implements ITestInfoService {
         }
 
         vm.setTotalQuestions(totalQuestions);
-        // TODO: Implement correct answers calculation once the answer tracking is
-        // implemented
-        vm.setCorrectAnswers(0); // Placeholder
+        // Count correct answers for this test attempt
+        int correctAnswers = questionResponseRepository.countByTestAttemptAndIsCorrect(attempt, true);
+        vm.setCorrectAnswers(correctAnswers);
 
         return vm;
     }
