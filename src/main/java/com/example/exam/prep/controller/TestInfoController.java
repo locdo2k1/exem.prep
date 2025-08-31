@@ -54,11 +54,11 @@ public class TestInfoController {
     /**
      * Get test attempt information for a specific test and user
      * 
-     * @param testId The ID of the test
-     * @param userId The ID of the user (optional, if not provided returns all
-     *               attempts for the test)
+     * @param testId The ID of the test (required)
+     * @param userId The ID of the user (optional) - if not provided, the system will use the authenticated user's ID
      * @param tz Optional IANA timezone (e.g., Asia/Ho_Chi_Minh) for localizing takeDate
      * @return List of TestAttemptInfo with attempt details
+     * @throws ResponseStatusException with BAD_REQUEST status if the test ID is invalid or user is not authenticated (when userId is not provided)
      */
     @GetMapping("/{testId}/attempts")
     public ResponseEntity<ApiResponse<List<TestAttemptInfoVM>>> getTestAttempts(
