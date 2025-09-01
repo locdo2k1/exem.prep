@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidParameterException;
 import java.util.Base64;
@@ -77,7 +79,8 @@ public class AuthController {
     @PostMapping("/token")
     public ResponseEntity<ApiResponse<String>> getAuthToken(@RequestParam("code") String code, @RequestParam("provider") String provider) {
         try {
-            String token = authService.getAuthToken(code, provider);
+            String decodedCode = URLDecoder.decode(code, StandardCharsets.UTF_8);
+            String token = authService.getAuthToken(decodedCode, provider);
             return ResponseEntity.ok(ApiResponse.success(token, AuthResponseMessage.TOKEN_GENERATED.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

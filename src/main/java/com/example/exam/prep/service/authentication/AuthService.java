@@ -93,7 +93,13 @@ public class AuthService implements IAuthService {
         }
         User user = unitOfWork.getUserRepository().findByEmail(email);
         if (user == null) {
-            throw new InvalidParameterException("User not found for the given email");
+            // Auto-register new user with email from OAuth provider
+            String username = email.split("@")[0]; // Generate username from email
+            user = new User();
+            user.setEmail(email);
+            user.setUsername(username);
+            user.setPassword(""); // OAuth users don't need a password
+            user = unitOfWork.getUserRepository().save(user);
         }
         return generateToken(user);
     }
