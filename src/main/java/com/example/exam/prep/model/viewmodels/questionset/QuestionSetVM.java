@@ -39,7 +39,7 @@ public class QuestionSetVM {
     private List<QuestionViewModel> questions;
     private int totalQuestions;
     private int totalScore;
-    
+
     /**
      * Converts a Question entity to a QuestionViewModel
      */
@@ -47,13 +47,13 @@ public class QuestionSetVM {
         if (question == null) {
             return null;
         }
-        
+
         QuestionViewModel viewModel = new QuestionViewModel();
         viewModel.setId(question.getId());
         viewModel.setPrompt(question.getPrompt());
         viewModel.setScore(customScore != null ? customScore : question.getScore());
         viewModel.setOrder(order);
-        
+
         // Set question category if available
         if (question.getCategory() != null) {
             QuestionCategoryViewModel categoryVM = new QuestionCategoryViewModel();
@@ -63,7 +63,7 @@ public class QuestionSetVM {
             categoryVM.setSkill(question.getCategory().getSkill());
             viewModel.setQuestionCategory(categoryVM);
         }
-        
+
         // Set question type if available
         if (question.getQuestionType() != null) {
             QuestionTypeViewModel typeVM = new QuestionTypeViewModel();
@@ -71,7 +71,7 @@ public class QuestionSetVM {
             typeVM.setName(question.getQuestionType().getName());
             viewModel.setQuestionType(typeVM);
         }
-        
+
         // Map options if available
         if (question.getOptions() != null) {
             List<OptionViewModel> optionViewModels = question.getOptions().stream()
@@ -85,7 +85,7 @@ public class QuestionSetVM {
                     .collect(Collectors.toList());
             viewModel.setOptions(optionViewModels);
         }
-        
+
         // Map fill blank answers if available
         if (question.getFillBlankAnswers() != null && !question.getFillBlankAnswers().isEmpty()) {
             List<String> answers = question.getFillBlankAnswers().stream()
@@ -95,11 +95,11 @@ public class QuestionSetVM {
         } else {
             viewModel.setQuestionAnswers(new ArrayList<>());
         }
-        
+
         // Map question audios if available
         if (question.getFileInfos() != null) {
             List<FileInfoViewModel> audioViewModels = question.getFileInfos().stream()
-                    .filter(fileInfo -> fileInfo.getFileType() != null && 
+                    .filter(fileInfo -> fileInfo.getFileType() != null &&
                             fileInfo.getFileType().startsWith("audio/"))
                     .map(fileInfo -> {
                         FileInfoViewModel fileInfoVM = new FileInfoViewModel();
@@ -112,13 +112,13 @@ public class QuestionSetVM {
                     .collect(Collectors.toList());
             viewModel.setQuestionAudios(audioViewModels);
         }
-        
+
         return viewModel;
     }
-    
 
     /**
      * Static factory method to create a QuestionSetVM from a QuestionSet entity.
+     * 
      * @param questionSet The QuestionSet entity to convert
      * @return A new QuestionSetVM instance
      */
@@ -126,19 +126,21 @@ public class QuestionSetVM {
         if (questionSet == null) {
             return null;
         }
-        
+
         // Convert QuestionSetItems to QuestionViewModels
         List<QuestionViewModel> questions = questionSet.getQuestionSetItems().stream()
                 .filter(QuestionSetItem::getIsActive)
+                .filter(item -> item.getQuestion() != null) // Filter out null questions
                 .map(item -> toQuestionViewModel(item.getQuestion(), item.getCustomScore(), item.getOrder()))
+                .filter(vm -> vm != null) // Filter out any null view models
                 .sorted(Comparator.comparingInt(QuestionViewModel::getOrder))
                 .collect(Collectors.toList());
-        
+
         // Calculate total score
         int totalScore = questions.stream()
                 .mapToInt(QuestionViewModel::getScore)
                 .sum();
-        
+
         return QuestionSetVM.builder()
                 .id(questionSet.getId())
                 .title(questionSet.getTitle())
