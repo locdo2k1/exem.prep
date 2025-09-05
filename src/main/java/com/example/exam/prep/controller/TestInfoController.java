@@ -5,6 +5,8 @@ import com.example.exam.prep.model.viewmodels.PracticeTestInfoVM;
 import com.example.exam.prep.model.viewmodels.TestAttemptInfoVM;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.ITestInfoService;
+import com.example.exam.prep.service.ITestService;
+import com.example.exam.prep.viewmodel.test.answer.TestAnswerVM;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -15,9 +17,11 @@ import java.util.UUID;
 public class TestInfoController {
 
     private final ITestInfoService testInfoService;
+    private final ITestService testService;
 
-    public TestInfoController(ITestInfoService testInfoService) {
+    public TestInfoController(ITestInfoService testInfoService, ITestService testService) {
         this.testInfoService = testInfoService;
+        this.testService = testService;
     }
 
     /**
@@ -55,10 +59,14 @@ public class TestInfoController {
      * Get test attempt information for a specific test and user
      * 
      * @param testId The ID of the test (required)
-     * @param userId The ID of the user (optional) - if not provided, the system will use the authenticated user's ID
-     * @param tz Optional IANA timezone (e.g., Asia/Ho_Chi_Minh) for localizing takeDate
+     * @param userId The ID of the user (optional) - if not provided, the system
+     *               will use the authenticated user's ID
+     * @param tz     Optional IANA timezone (e.g., Asia/Ho_Chi_Minh) for localizing
+     *               takeDate
      * @return List of TestAttemptInfo with attempt details
-     * @throws ResponseStatusException with BAD_REQUEST status if the test ID is invalid or user is not authenticated (when userId is not provided)
+     * @throws ResponseStatusException with BAD_REQUEST status if the test ID is
+     *                                 invalid or user is not authenticated (when
+     *                                 userId is not provided)
      */
     @GetMapping("/{testId}/attempts")
     public ResponseEntity<ApiResponse<List<TestAttemptInfoVM>>> getTestAttempts(
@@ -69,6 +77,23 @@ public class TestInfoController {
             List<TestAttemptInfoVM> attempts = testInfoService.getTestAttempts(testId, userId, tz);
             return ResponseEntity
                     .ok(ApiResponse.success(attempts, TestResponseMessage.TEST_ATTEMPTS_RETRIEVED.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), 400));
+        }
+    }
+
+    /**
+     * Get solutions for a specific test
+     * 
+     * @param testId The UUID of the test to get solutions for
+     * @return ResponseEntity containing test information, parts, and questions with
+     *         solutions
+     */
+    @GetMapping("/{testId}/solutions")
+    public ResponseEntity<ApiResponse<TestAnswerVM>> getTestSolutions(@PathVariable UUID testId) {
+        try {
+            TestAnswerVM answers = testService.testAnswers(testId);
+            return ResponseEntity.ok(ApiResponse.success(answers, TestResponseMessage.TEST_RETRIEVED.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), 400));
         }

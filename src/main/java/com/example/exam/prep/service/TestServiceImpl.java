@@ -3,7 +3,11 @@ package com.example.exam.prep.service;
 import com.example.exam.prep.model.*;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
 import com.example.exam.prep.model.viewmodels.question.QuestionTypeViewModel;
+import com.example.exam.prep.repository.ITestPartRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import com.example.exam.prep.model.viewmodels.file.FileInfoViewModel;
+import com.example.exam.prep.viewmodel.test.answer.*;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -21,7 +25,8 @@ import com.example.exam.prep.vm.test.*;
 public class TestServiceImpl implements ITestService {
     @Override
     @Transactional(readOnly = true)
-    public org.springframework.data.domain.Page<TestVM> getAllTests(org.springframework.data.domain.Pageable pageable, String search) {
+    public org.springframework.data.domain.Page<TestVM> getAllTests(org.springframework.data.domain.Pageable pageable,
+            String search) {
         var testRepo = unitOfWork.getTestRepository();
         String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
         return testRepo.searchTests(searchTerm, pageable).map(TestVM::fromEntity);
@@ -29,11 +34,13 @@ public class TestServiceImpl implements ITestService {
 
     @Override
     @Transactional(readOnly = true)
-    public org.springframework.data.domain.Page<TestVMSimple> getAllTestsSimple(org.springframework.data.domain.Pageable pageable, String search) {
+    public org.springframework.data.domain.Page<TestVMSimple> getAllTestsSimple(
+            org.springframework.data.domain.Pageable pageable, String search) {
         var testRepo = unitOfWork.getTestRepository();
         String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
         return testRepo.searchTests(searchTerm, pageable).map(com.example.exam.prep.vm.test.TestVMSimple::fromEntity);
     }
+
     private final IUnitOfWork unitOfWork;
     private final IFileStorageService fileStorageService;
 
@@ -62,11 +69,12 @@ public class TestServiceImpl implements ITestService {
         if (test.getTestQuestionSetDetails() != null) {
             test.getTestQuestionSetDetails().clear();
         }
-        
+
         // Save to ensure cascading deletes take effect
         unitOfWork.getTestRepository().saveAndFlush(test);
-        
-        // Clear test skills separately as they're not part of the cascading relationship
+
+        // Clear test skills separately as they're not part of the cascading
+        // relationship
         List<TestSkill> testSkills = unitOfWork.getTestSkillRepository().findByTestId(test.getId());
         if (testSkills != null && !testSkills.isEmpty()) {
             unitOfWork.getTestSkillRepository().deleteAll(testSkills);
@@ -160,39 +168,39 @@ public class TestServiceImpl implements ITestService {
                 test.getTestParts().clear();
                 unitOfWork.getTestPartRepository().flush(); // Flush to ensure deletes are processed
             }
-            
+
             // Delete test files
             if (test.getTestFiles() != null && !test.getTestFiles().isEmpty()) {
                 unitOfWork.getTestFileRepository().deleteAll(test.getTestFiles());
                 test.getTestFiles().clear();
                 unitOfWork.getTestFileRepository().flush();
             }
-            
+
             // Delete test question details
             if (test.getTestQuestionDetails() != null && !test.getTestQuestionDetails().isEmpty()) {
                 unitOfWork.getTestQuestionDetailRepository().deleteAll(test.getTestQuestionDetails());
                 test.getTestQuestionDetails().clear();
                 unitOfWork.getTestQuestionDetailRepository().flush();
             }
-            
+
             // Delete test question set details
             if (test.getTestQuestionSetDetails() != null && !test.getTestQuestionSetDetails().isEmpty()) {
                 unitOfWork.getTestQuestionSetDetailRepository().deleteAll(test.getTestQuestionSetDetails());
                 test.getTestQuestionSetDetails().clear();
                 unitOfWork.getTestQuestionSetDetailRepository().flush();
             }
-            
+
             // Delete test skills
             if (test.getTestSkills() != null && !test.getTestSkills().isEmpty()) {
                 unitOfWork.getTestSkillRepository().deleteAll(test.getTestSkills());
                 test.getTestSkills().clear();
                 unitOfWork.getTestSkillRepository().flush();
             }
-            
+
             // Delete the test itself
             unitOfWork.getTestRepository().delete(test);
             unitOfWork.getTestRepository().flush();
-            
+
         } catch (Exception e) {
             // Log the error and rethrow
             throw new RuntimeException("Error deleting test with id: " + id, e);
@@ -605,7 +613,8 @@ public class TestServiceImpl implements ITestService {
                                                 convertToQuestionTypeViewModel(question.getQuestionType()));
                                         questionVM.setScore(item.getCustomScore() != null ? item.getCustomScore()
                                                 : question.getScore());
-                                        questionVM.setOrder(item.getOrder() != null ? item.getOrder() - 1 + setVM.getOrder() : 0);
+                                        questionVM.setOrder(
+                                                item.getOrder() != null ? item.getOrder() - 1 + setVM.getOrder() : 0);
 
                                         // Map fill blank answers if any
                                         if (question.getFillBlankAnswers() != null
@@ -751,5 +760,286 @@ public class TestServiceImpl implements ITestService {
                 unitOfWork.getTestQuestionDetailRepository().save(testQuestionDetail);
             });
         }
+    }
+
+    private TestAnswerPartVM getTestAnswerPartById(UUID partId, UUID testId) {
+        // Get the test part that connects this part to the test
+        TestPart testPart = unitOfWork.getTestPartRepository().findAll().stream()
+                .filter(tp -> tp.getPart() != null && tp.getPart().getId().equals(partId) 
+                        && tp.getTest() != null && tp.getTest().getId().equals(testId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Test part not found for partId: " + partId + " and testId: " + testId));
+
+        // Get the part with its relationships
+        Part part = testPart.getPart();
+        if (part == null) {
+            throw new EntityNotFoundException("Part not found for testPart: " + testPart.getId());
+        }
+
+        // Create the view model
+        TestAnswerPartVM partVM = new TestAnswerPartVM();
+        partVM.setId(part.getId());
+        partVM.setName(part.getName() != null ? part.getName() : "");
+        
+        // Initialize the list to hold both questions and question sets
+        List<TestAnswerQuestionAndQuestionSetVM> questionsAndSets = new ArrayList<>();
+
+        // Process individual questions in this test part
+        if (testPart.getTestPartQuestions() != null) {
+            testPart.getTestPartQuestions().stream()
+                    .filter(Objects::nonNull)
+                    .filter(tpq -> tpq.getQuestion() != null)
+                    .sorted(Comparator.comparing(TestPartQuestion::getDisplayOrder,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
+                    .forEach(testPartQuestion -> {
+                        Question question = testPartQuestion.getQuestion();
+                        TestAnswerQuestionVM questionVM = new TestAnswerQuestionVM();
+                        // Set the order for the question
+                        Integer displayOrder = testPartQuestion.getDisplayOrder();
+                        questionVM.setOrder(displayOrder != null ? displayOrder : 0);
+
+                        // Find and set the correct option if this is a multiple choice question
+                        if (question.getOptions() != null) {
+                            question.getOptions().stream()
+                                    .filter(Option::isCorrect)
+                                    .findFirst()
+                                    .ifPresent(option -> {
+                                        TestAnswerOptionVM optionVM = new TestAnswerOptionVM();
+                                        optionVM.setText(option.getText());
+                                        questionVM.setCorrectOption(optionVM);
+                                    });
+                        }
+
+                        // Set transcript if available
+                        if (question.getFillBlankAnswers() != null && !question.getFillBlankAnswers().isEmpty()) {
+                            String transcript = question.getFillBlankAnswers().stream()
+                                    .map(FillBlankAnswer::getAnswerText)
+                                    .collect(Collectors.joining(", "));
+                            questionVM.setTranscript(transcript);
+                        }
+
+                        TestAnswerQuestionAndQuestionSetVM vm = new TestAnswerQuestionAndQuestionSetVM();
+                        vm.setId(question.getId());
+                        vm.setOrder(displayOrder != null ? displayOrder : 0);
+                        vm.setQuestion(questionVM);
+                        questionsAndSets.add(vm);
+                    });
+        }
+
+        // Process question sets in this test part
+        if (testPart.getTestPartQuestionSets() != null) {
+            testPart.getTestPartQuestionSets().stream()
+                    .filter(Objects::nonNull)
+                    .filter(tpqs -> tpqs.getQuestionSet() != null)
+                    .sorted(Comparator.comparing(TestPartQuestionSet::getDisplayOrder,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
+                    .forEach(testPartQuestionSet -> {
+                        QuestionSet questionSet = testPartQuestionSet.getQuestionSet();
+                        Integer displayOrder = testPartQuestionSet.getDisplayOrder();
+                        
+                        // Create question set VM
+                        TestAnswerQuestionSetVM setVM = new TestAnswerQuestionSetVM();
+                        setVM.setOrder(displayOrder != null ? displayOrder : 0);
+                        
+                        // Process questions in this question set
+                        if (questionSet.getQuestionSetItems() != null) {
+                            List<TestAnswerQuestionVM> questionVMs = questionSet.getQuestionSetItems().stream()
+                                    .filter(QuestionSetItem::getIsActive)
+                                    .filter(item -> item.getQuestion() != null)
+                                    .sorted(Comparator.comparing(QuestionSetItem::getOrder,
+                                            Comparator.nullsLast(Comparator.naturalOrder())))
+                                    .map(item -> {
+                                        Question question = item.getQuestion();
+                                        TestAnswerQuestionVM qVM = new TestAnswerQuestionVM();
+                                        qVM.setOrder(item.getOrder() != null ? item.getOrder() : 0);
+
+                                        // Find and set the correct option if this is a multiple choice question
+                                        if (question.getOptions() != null) {
+                                            question.getOptions().stream()
+                                                    .filter(Option::isCorrect)
+                                                    .findFirst()
+                                                    .ifPresent(option -> {
+                                                        TestAnswerOptionVM optionVM = new TestAnswerOptionVM();
+                                                        optionVM.setText(option.getText());
+                                                        qVM.setCorrectOption(optionVM);
+                                                    });
+                                        }
+
+                                        // Set transcript if available
+                                        if (question.getFillBlankAnswers() != null && 
+                                                !question.getFillBlankAnswers().isEmpty()) {
+                                            String transcript = question.getFillBlankAnswers().stream()
+                                                    .map(FillBlankAnswer::getAnswerText)
+                                                    .collect(Collectors.joining(", "));
+                                            qVM.setTranscript(transcript);
+                                        }
+                                        
+                                        return qVM;
+                                    })
+                                    .collect(Collectors.toList());
+                            setVM.setQuestions(questionVMs);
+                        }
+                        
+                        TestAnswerQuestionAndQuestionSetVM vm = new TestAnswerQuestionAndQuestionSetVM();
+                        vm.setId(questionSet.getId());
+                        vm.setOrder(displayOrder != null ? displayOrder : 0);
+                        vm.setQuestionSet(setVM);
+                        questionsAndSets.add(vm);
+                    });
+        }
+        
+        // Sort all items by their order
+        questionsAndSets.sort(Comparator.comparingInt(TestAnswerQuestionAndQuestionSetVM::getOrder));
+        partVM.setQuestionsAndQuestionSets(questionsAndSets);
+        
+        return partVM;
+    }
+    
+    @Override
+    public TestAnswerVM testAnswers(UUID testId) {
+        // Get the test with its relationships
+        Test test = unitOfWork.getTestRepository().findById(testId)
+                .orElseThrow(() -> new EntityNotFoundException("Test not found with id: " + testId));
+
+        // Create the view model
+        TestAnswerVM vm = new TestAnswerVM();
+        vm.setTestId(test.getId());
+        vm.setTestName(test.getName());
+
+        // Initialize lists
+        List<TestAnswerPartVM> parts = new ArrayList<>();
+        List<TestAnswerQuestionAndQuestionSetVM> allQuestionItems = new ArrayList<>();
+
+        // Process test parts if they exist
+        if (test.getTestParts() != null && !test.getTestParts().isEmpty()) {
+            List<TestPart> testParts = test.getTestParts().stream()
+                    .filter(Objects::nonNull)
+                    .filter(tp -> tp.getPart() != null)
+                    .sorted(Comparator.comparing(TestPart::getOrderIndex,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
+                    .collect(Collectors.toList());
+
+            // Process each test part to get its details and questions/question sets
+            for (TestPart testPart : testParts) {
+                UUID partId = testPart.getPart().getId();
+                // Get the part details using the existing method
+                TestAnswerPartVM partVM = getTestAnswerPartById(partId, testId);
+                
+                if (partVM != null) {
+                    parts.add(partVM);
+                }
+            }
+        }
+
+        // Map individual questions from testQuestionDetails
+        if (test.getTestQuestionDetails() != null) {
+            test.getTestQuestionDetails().stream()
+                    .filter(Objects::nonNull)
+                    .filter(detail -> detail.getQuestion() != null)
+                    .sorted(Comparator.comparing(TestQuestionDetail::getOrder,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
+                    .forEach(detail -> {
+                        Question question = detail.getQuestion();
+                        int order = detail.getOrder() != null ? detail.getOrder() : 0;
+                        TestAnswerQuestionVM questionVM = new TestAnswerQuestionVM();
+                        questionVM.setOrder(order);
+
+                        // Find and set the correct option if this is a multiple choice question
+                        if (question.getOptions() != null) {
+                            question.getOptions().stream()
+                                    .filter(Option::isCorrect)
+                                    .findFirst()
+                                    .ifPresent(option -> {
+                                        TestAnswerOptionVM optionVM = new TestAnswerOptionVM();
+                                        optionVM.setText(option.getText());
+                                        questionVM.setCorrectOption(optionVM);
+                                    });
+                        }
+
+                        // Set transcript if available
+                        if (question.getFillBlankAnswers() != null && !question.getFillBlankAnswers().isEmpty()) {
+                            String transcript = question.getFillBlankAnswers().stream()
+                                    .map(FillBlankAnswer::getAnswerText)
+                                    .collect(Collectors.joining(", "));
+                            questionVM.setTranscript(transcript);
+                        }
+
+                        TestAnswerQuestionAndQuestionSetVM itemVM = new TestAnswerQuestionAndQuestionSetVM();
+                        itemVM.setId(question.getId());
+                        itemVM.setOrder(order);
+                        itemVM.setQuestion(questionVM);
+                        allQuestionItems.add(itemVM);
+                    });
+        }
+
+        // Map question sets from testQuestionSetDetails
+        if (test.getTestQuestionSetDetails() != null) {
+            test.getTestQuestionSetDetails().stream()
+                    .filter(Objects::nonNull)
+                    .filter(detail -> detail.getQuestionSet() != null)
+                    .sorted(Comparator.comparing(TestQuestionSetDetail::getOrder,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
+                    .map(detail -> {
+                        QuestionSet questionSet = detail.getQuestionSet();
+                        int order = detail.getOrder() != null ? detail.getOrder() : 0;
+                        TestAnswerQuestionSetVM setVM = new TestAnswerQuestionSetVM();
+                        setVM.setOrder(order);
+                        // Map questions in this question set
+                        if (questionSet.getQuestionSetItems() != null) {
+                            List<TestAnswerQuestionVM> questionVMs = questionSet.getQuestionSetItems().stream()
+                                    .filter(QuestionSetItem::getIsActive)
+                                    .filter(item -> item.getQuestion() != null)
+                                    .sorted(Comparator.comparing(QuestionSetItem::getOrder,
+                                            Comparator.nullsLast(Comparator.naturalOrder())))
+                                    .map(item -> {
+                                        Question question = item.getQuestion();
+                                        TestAnswerQuestionVM questionVM = new TestAnswerQuestionVM();
+                                        int questionOrder = item.getOrder() != null ? item.getOrder() - 1 + order : 0;
+                                        questionVM.setOrder(questionOrder);
+
+                                        // Find and set the correct option if this is a multiple choice question
+                                        if (question.getOptions() != null) {
+                                            question.getOptions().stream()
+                                                    .filter(Option::isCorrect)
+                                                    .findFirst()
+                                                    .ifPresent(option -> {
+                                                        TestAnswerOptionVM optionVM = new TestAnswerOptionVM();
+                                                        optionVM.setText(option.getText());
+                                                        questionVM.setCorrectOption(optionVM);
+                                                    });
+                                        }
+
+                                        // Set transcript if available
+                                        if (question.getFillBlankAnswers() != null
+                                                && !question.getFillBlankAnswers().isEmpty()) {
+                                            String transcript = question.getFillBlankAnswers().stream()
+                                                    .map(FillBlankAnswer::getAnswerText)
+                                                    .collect(Collectors.joining(", "));
+                                            questionVM.setTranscript(transcript);
+                                        }
+                                        return questionVM;
+                                    })
+                                    .collect(Collectors.toList());
+                            setVM.setQuestions(questionVMs);
+                            setVM.setQuestions(questionVMs);
+                        } else {
+                            setVM.setQuestions(Collections.emptyList());
+                        }
+                        TestAnswerQuestionAndQuestionSetVM itemVM = new TestAnswerQuestionAndQuestionSetVM();
+                        itemVM.setId(questionSet.getId());
+                        itemVM.setOrder(order);
+                        itemVM.setQuestionSet(setVM);
+                        return itemVM;
+                    })
+                    .forEach(allQuestionItems::add);
+        }
+
+        // Sort all items by their order
+        allQuestionItems.sort(Comparator.comparingInt(TestAnswerQuestionAndQuestionSetVM::getOrder));
+
+        vm.setParts(parts);
+        vm.setQuestionAndQuestionSet(allQuestionItems);
+        return vm;
     }
 }
