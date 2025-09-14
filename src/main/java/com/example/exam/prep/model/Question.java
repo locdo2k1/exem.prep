@@ -37,6 +37,9 @@ public class Question extends BaseEntity {
     @Column(name = "audio_url")
     private String audioUrl;
 
+    @Column(name = "transcript", columnDefinition = "NVARCHAR(MAX)")
+    private String transcript;
+
     @Column(name = "prompt", columnDefinition = "NVARCHAR(MAX)")
     private String prompt;
 
