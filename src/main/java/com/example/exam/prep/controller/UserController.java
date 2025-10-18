@@ -1,11 +1,14 @@
 package com.example.exam.prep.controller;
 
 import com.example.exam.prep.model.User;
+import com.example.exam.prep.model.viewmodels.BasicUserInfo;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.IUserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +38,34 @@ public class UserController {
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(getNotFoundMessage(), HttpStatus.NOT_FOUND.value()));
+    }
+
+    @GetMapping(value = {"/{id}/basic", "/me/basic"})
+    public ResponseEntity<ApiResponse<BasicUserInfo>> getBasicUserInfo(
+            @PathVariable(required = false) UUID id,
+            @AuthenticationPrincipal User userDetails) {
+        
+        // If no ID is provided, try to get it from the authenticated user
+        if (id == null) {
+            if (userDetails == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error(AUTHENTICATION_REQUIRED.getMessage(), HttpStatus.UNAUTHORIZED.value()));
+            }
+            // Get the full user details using the username from the authentication
+            User user = userService.findByUsername(userDetails.getUsername());
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(USER_NOT_FOUND.getMessage(), HttpStatus.NOT_FOUND.value()));
+            }
+            id = user.getId();
+        }
+        
+        BasicUserInfo basicUserInfo = userService.getBasicUserInfo(id);
+        if (basicUserInfo != null) {
+            return ResponseEntity.ok(ApiResponse.success(basicUserInfo, USER_BASIC_INFO_RETRIEVED.getMessage()));
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(USER_NOT_FOUND.getMessage(), HttpStatus.NOT_FOUND.value()));
     }
 
     @PostMapping

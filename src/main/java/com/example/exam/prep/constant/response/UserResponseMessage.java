@@ -11,7 +11,9 @@ public enum UserResponseMessage implements BaseResponseMessage {
     USER_NOT_FOUND("User not found"),
     USER_CREATE_FAILED("Failed to create user"),
     USER_UPDATE_FAILED("Failed to update user"),
-    USER_DELETE_FAILED("Failed to delete user");
+    USER_DELETE_FAILED("Failed to delete user"),
+    USER_BASIC_INFO_RETRIEVED("Basic user info retrieved successfully"),
+    AUTHENTICATION_REQUIRED("Authentication required");
 
     private final String message;
 
