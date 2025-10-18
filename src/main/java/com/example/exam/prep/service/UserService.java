@@ -1,6 +1,7 @@
 package com.example.exam.prep.service;
 
 import com.example.exam.prep.model.User;
+import com.example.exam.prep.model.viewmodels.BasicUserInfo;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
 import org.springframework.stereotype.Service;
 
@@ -44,5 +45,18 @@ public class UserService implements IUserService {
     @Override
     public User findByUsername(String username) {
         return unitOfWork.getUserRepository().findByUsername(username);
+    }
+
+    @Override
+    public BasicUserInfo getBasicUserInfo(UUID id) {
+        User user = getUser(id);
+        if (user == null) {
+            return null;
+        }
+        return new BasicUserInfo(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail()
+        );
     }
 }

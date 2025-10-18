@@ -83,6 +83,7 @@ public class TestServiceImpl implements ITestService {
         // Update test properties
         test.setName(testVM.getTitle());
         test.setDescription(""); // Description is not available in TestEditVM, using empty string
+        test.setDurationMinutes(testVM.getDurationMinutes() != null ? testVM.getDurationMinutes() : 40);
 
         // Set test category if provided
         if (testVM.getTestCategoryId() != null) {
@@ -214,6 +215,7 @@ public class TestServiceImpl implements ITestService {
         Test test = new Test();
         test.setName(testVM.getTitle());
         test.setDescription(""); // Description is not available in TestCreateVM, using empty string
+        test.setDurationMinutes(testVM.getDurationMinutes() != null ? testVM.getDurationMinutes() : 40);
 
         // Set test category if provided
         if (testVM.getTestCategoryId() != null) {

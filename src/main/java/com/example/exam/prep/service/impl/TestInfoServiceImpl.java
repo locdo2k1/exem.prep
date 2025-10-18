@@ -2,6 +2,7 @@ package com.example.exam.prep.service.impl;
 
 import com.example.exam.prep.model.*;
 import com.example.exam.prep.repository.IQuestionResponseRepository;
+import com.example.exam.prep.repository.ITestQuestionSetDetailRepository;
 import com.example.exam.prep.model.TestPartAttempt;
 import com.example.exam.prep.model.TestPartQuestion;
 import com.example.exam.prep.model.TestPartQuestionSet;
@@ -39,6 +40,7 @@ public class TestInfoServiceImpl implements ITestInfoService {
     private final ITestRepository testRepository;
     private final ITestPartRepository testPartRepository;
     private final ITestQuestionDetailRepository testQuestionDetailRepository;
+    private final ITestQuestionSetDetailRepository testQuestionSetDetailRepository;
     private final ITestAttemptRepository testAttemptRepository;
     private final IUserRepository userRepository;
     private final IQuestionResponseRepository questionResponseRepository;
@@ -47,12 +49,14 @@ public class TestInfoServiceImpl implements ITestInfoService {
             ITestRepository testRepository,
             ITestPartRepository testPartRepository,
             ITestQuestionDetailRepository testQuestionDetailRepository,
+            ITestQuestionSetDetailRepository testQuestionSetDetailRepository,
             ITestAttemptRepository testAttemptRepository,
             IUserRepository userRepository,
             IQuestionResponseRepository questionResponseRepository) {
         this.testRepository = testRepository;
         this.testPartRepository = testPartRepository;
         this.testQuestionDetailRepository = testQuestionDetailRepository;
+        this.testQuestionSetDetailRepository = testQuestionSetDetailRepository;
         this.testAttemptRepository = testAttemptRepository;
         this.userRepository = userRepository;
         this.questionResponseRepository = questionResponseRepository;
@@ -245,6 +249,8 @@ public class TestInfoServiceImpl implements ITestInfoService {
 
     private TestAttemptInfoVM mapToTestAttemptInfoVM(TestAttempt attempt, ZoneId zone) {
         TestAttemptInfoVM vm = new TestAttemptInfoVM();
+        // Expose the attempt identifier
+        vm.setId(attempt.getId());
         Instant inserted = attempt.getInsertedAt();
         vm.setTakeDate(inserted);
         if (inserted != null) {
@@ -318,11 +324,26 @@ public class TestInfoServiceImpl implements ITestInfoService {
     }
 
     private int calculateTotalQuestionsFromTest(Test test) {
-        return test.getTestParts().stream()
-                .mapToInt(testPart -> testPart.getTestPartQuestions().size() +
-                        testPart.getTestPartQuestionSets().stream()
-                                .mapToInt(questionSet -> questionSet.getQuestionSet().getQuestions().size())
-                                .sum())
+        // If test has parts, calculate from parts
+        if (test.getTestParts() != null && !test.getTestParts().isEmpty()) {
+            return test.getTestParts().stream()
+                    .mapToInt(testPart -> testPart.getTestPartQuestions().size() +
+                            testPart.getTestPartQuestionSets().stream()
+                                    .mapToInt(questionSet -> questionSet.getQuestionSet().getQuestions().size())
+                                    .sum())
+                    .sum();
+        }
+        
+        // If no parts, count directly from TestQuestionDetail and TestQuestionSetDetail
+        int directQuestions = testQuestionDetailRepository.countByTestId(test.getId());
+        
+        int questionsFromSets = testQuestionSetDetailRepository.findByTestId(test.getId()).stream()
+                .mapToInt(detail -> {
+                    QuestionSet questionSet = detail.getQuestionSet();
+                    return questionSet != null ? questionSet.getQuestionSetItems().size() : 0;
+                })
                 .sum();
+                
+        return directQuestions + questionsFromSets;
     }
 }

@@ -17,4 +17,5 @@ public class TestCreateVM {
     private List<UUID> skillIds;
     private UUID testCategoryId;
     private List<MultipartFile> files;
+    private Integer durationMinutes;
 }

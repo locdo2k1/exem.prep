@@ -1,6 +1,7 @@
 package com.example.exam.prep.service;
 
 import com.example.exam.prep.model.User;
+import com.example.exam.prep.model.viewmodels.BasicUserInfo;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,5 +18,7 @@ public interface IUserService {
     void deleteUser(UUID id);
 
     User findByUsername(String username);
+    
+    BasicUserInfo getBasicUserInfo(UUID id);
 }
 

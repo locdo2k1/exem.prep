@@ -18,6 +18,8 @@ public class TestVM {
     private TestCategoryVM testCategory;
     private boolean isActive;
 
+    private Integer durationMinutes;
+
     public static TestVM fromEntity(Test test) {
         if (test == null) {
             return null;
@@ -26,6 +28,7 @@ public class TestVM {
         TestVM vm = new TestVM();
         vm.setId(test.getId());
         vm.setTitle(test.getName());
+        vm.setDurationMinutes(test.getDurationMinutes());
         
         if (test.getTestCategory() != null) {
             TestCategoryVM categoryVM = TestCategoryVM.builder()
