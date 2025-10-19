@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 @Repository
 public interface ITestAttemptRepository extends GenericRepository<TestAttempt> {
@@ -49,4 +51,13 @@ public interface ITestAttemptRepository extends GenericRepository<TestAttempt> {
         Optional<TestAttempt> findByIdAndUserId(
                         @Param("attemptId") UUID attemptId,
                         @Param("userId") UUID userId);
+
+        /**
+         * Find test attempts by user ID, ordered by creation date in descending order with pagination.
+         *
+         * @param userId The ID of the user
+         * @param pageable Pagination information
+         * @return Page of test attempts
+         */
+        Page<TestAttempt> findByUserIdOrderByInsertedAtDesc(UUID userId, Pageable pageable);
 }
