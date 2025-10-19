@@ -1,8 +1,10 @@
 package com.example.exam.prep.service;
 
 import com.example.exam.prep.model.TestAttempt;
+import com.example.exam.prep.model.viewmodels.TestAttemptWithNameVM;
 import com.example.exam.prep.constant.status.TestStatus;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -46,6 +48,16 @@ public interface ITestAttemptService {
      * @return The TestAttempt if found
      */
     TestAttempt getTestAttemptById(UUID attemptId);
+    
+    /**
+     * Gets the most recent test attempts for a user with their test names.
+     *
+     * @param userId The ID of the user
+     * @param limit The maximum number of attempts to return
+     * @param timezone The timezone to use for date/time formatting (e.g., "Asia/Ho_Chi_Minh")
+     * @return A list of most recent TestAttemptWithNameVM objects, limited by the specified count
+     */
+    List<TestAttemptWithNameVM> getLatestTestAttemptsWithTestName(UUID userId, int limit, String timezone);
     
     /**
      * Calculates and updates the total score for a test attempt.

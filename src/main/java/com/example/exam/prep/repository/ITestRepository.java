@@ -32,4 +32,15 @@ public interface ITestRepository extends GenericRepository<Test> {
            "LOWER(tc.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Test> searchTests(@Param("search") String search, Pageable pageable);
+
+    @Query("SELECT t FROM Test t WHERE t.testCategory.id = :testCategoryId")
+    Page<Test> findByTestCategoryId(@Param("testCategoryId") UUID testCategoryId, Pageable pageable);
+
+    @Query("SELECT t FROM Test t WHERE " +
+           "(:testCategoryId IS NULL OR t.testCategory.id = :testCategoryId) AND " +
+           "(:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Test> findByTestCategoryIdAndKeyword(
+            @Param("testCategoryId") UUID testCategoryId,
+            @Param("keyword") String keyword,
+            Pageable pageable);
 }

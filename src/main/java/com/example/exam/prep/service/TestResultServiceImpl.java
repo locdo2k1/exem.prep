@@ -141,92 +141,96 @@ public class TestResultServiceImpl implements ITestResultService {
         }
 
         @Override
-public AnalysisQuestionsVM getTestAttemptAnalysis(UUID attemptId) {
-    TestAttempt testAttempt = unitOfWork.getTestAttemptRepository().findById(attemptId)
-            .orElseThrow(() -> new RuntimeException("Test attempt not found for ID: " + attemptId));
+        public AnalysisQuestionsVM getTestAttemptAnalysis(UUID attemptId) {
+                TestAttempt testAttempt = unitOfWork.getTestAttemptRepository().findById(attemptId)
+                                .orElseThrow(() -> new RuntimeException("Test attempt not found for ID: " + attemptId));
 
-    questionResponses = unitOfWork.getQuestionResponseRepository().findByTestAttemptId(attemptId);
+                questionResponses = unitOfWork.getQuestionResponseRepository().findByTestAttemptId(attemptId);
 
-    // Get all questions in the test
-    List<QuestionResultDTO> allQuestions = getAllQuestionsInTest(testAttempt.getTest().getId());
+                // Get all questions in the test
+                List<QuestionResultDTO> allQuestions = getAllQuestionsInTest(testAttempt.getTest().getId());
 
-    // Get attempted part IDs
-    List<UUID> attemptedPartIds = unitOfWork.getTestPartAttemptRepository()
-            .findByTestAttemptId(attemptId)
-            .stream()
-            .map(testPartAttempt -> testPartAttempt.getPart().getId())
-            .collect(Collectors.toList());
+                // Get attempted part IDs
+                List<UUID> attemptedPartIds = unitOfWork.getTestPartAttemptRepository()
+                                .findByTestAttemptId(attemptId)
+                                .stream()
+                                .map(testPartAttempt -> testPartAttempt.getPart().getId())
+                                .collect(Collectors.toList());
 
-    // Convert all questions to analysis categories
-    List<AnalysisQuesCategory> allAnalysisCategories = convertToAnalysisByCategory(allQuestions);
+                // Convert all questions to analysis categories
+                List<AnalysisQuesCategory> allAnalysisCategories = convertToAnalysisByCategory(allQuestions);
 
-    // Filter categories to only include attempted parts or categories without a part
-    List<AnalysisQuesCategory> filteredCategories = allAnalysisCategories.stream()
-            .filter(category -> 
-                !category.getPartId().isPresent() ||  // Keep categories without a part
-                (category.getPartId().isPresent() && 
-                 attemptedPartIds.contains(category.getPartId().get()))  // Only keep categories for attempted parts
-            )
-            .collect(Collectors.toList());
+                // Filter categories to only include attempted parts or categories without a
+                // part
+                List<AnalysisQuesCategory> filteredCategories = allAnalysisCategories.stream()
+                                .filter(category -> !category.getPartId().isPresent() || // Keep categories without a
+                                                                                         // part
+                                                (category.getPartId().isPresent() &&
+                                                                attemptedPartIds.contains(category.getPartId().get())) // Only
+                                                                                                                       // keep
+                                                                                                                       // categories
+                                                                                                                       // for
+                                                                                                                       // attempted
+                                                                                                                       // parts
+                                )
+                                .collect(Collectors.toList());
 
-    // Separate general questions (without partId) from part-specific questions
-    Map<Boolean, List<AnalysisQuesCategory>> partitionedCategories = filteredCategories.stream()
-            .collect(Collectors.partitioningBy(cat -> cat.getPartId().isPresent()));
+                // Separate general questions (without partId) from part-specific questions
+                Map<Boolean, List<AnalysisQuesCategory>> partitionedCategories = filteredCategories.stream()
+                                .collect(Collectors.partitioningBy(cat -> cat.getPartId().isPresent()));
 
-    // Rest of the method remains the same...
-    // Get general questions for overall analysis
-    List<AnalysisQuesCategory> overallCategories = partitionedCategories.get(false);
+                // Rest of the method remains the same...
+                // Get general questions for overall analysis
+                List<AnalysisQuesCategory> overallCategories = partitionedCategories.get(false);
 
-    // Process part-specific questions
-    Map<Optional<UUID>, List<AnalysisQuesCategory>> categoriesByPart = partitionedCategories.get(true)
-            .stream()
-            .collect(Collectors.groupingBy(AnalysisQuesCategory::getPartId));
+                // Process part-specific questions
+                Map<Optional<UUID>, List<AnalysisQuesCategory>> categoriesByPart = partitionedCategories.get(true)
+                                .stream()
+                                .collect(Collectors.groupingBy(AnalysisQuesCategory::getPartId));
 
-    // Create part analysis for each part
-    List<AnalysisPartVM> parts = categoriesByPart.entrySet().stream()
-            .map(entry -> {
-                UUID partId = entry.getKey().orElse(null);
-                List<AnalysisQuesCategory> categories = entry.getValue();
+                // Create part analysis for each part
+                List<AnalysisPartVM> parts = categoriesByPart.entrySet().stream()
+                                .map(entry -> {
+                                        UUID partId = entry.getKey().orElse(null);
+                                        List<AnalysisQuesCategory> categories = entry.getValue();
 
-                AnalysisPartVM partVM = new AnalysisPartVM();
-                // Find part name if partId exists
-                Part part = unitOfWork.getPartRepository().findById(partId)
-                        .orElse(null);
-                TestPart testPart = unitOfWork.getTestPartRepository()
-                        .findByPartIdAndTestId(partId,
-                                testAttempt.getTest().getId())
-                        .orElse(null);
-                if (part != null) {
-                    partVM.setPartName(part.getName());
-                }
+                                        AnalysisPartVM partVM = new AnalysisPartVM();
+                                        // Find part name if partId exists
+                                        Part part = unitOfWork.getPartRepository().findById(partId)
+                                                        .orElse(null);
+                                        TestPart testPart = unitOfWork.getTestPartRepository()
+                                                        .findByPartIdAndTestId(partId,
+                                                                        testAttempt.getTest().getId())
+                                                        .orElse(null);
+                                        if (part != null) {
+                                                partVM.setPartName(part.getName());
+                                        }
 
-                if (testPart != null) {
-                    partVM.setOrder(testPart.getOrderIndex());
-                }
-                partVM.setCategories(categories);
-                return partVM;
-            })
-            .collect(Collectors.toList());
+                                        if (testPart != null) {
+                                                partVM.setOrder(testPart.getOrderIndex());
+                                        }
+                                        partVM.setCategories(categories);
+                                        return partVM;
+                                })
+                                .collect(Collectors.toList());
 
-    return AnalysisQuestionsVM.builder()
-            .parts(parts.stream()
-                    .sorted(Comparator.comparing(AnalysisPartVM::getOrder))
-                    .collect(Collectors.toList()))
-            .overall(overallCategories)
-            .build();
-}
+                return AnalysisQuestionsVM.builder()
+                                .parts(parts.stream()
+                                                .sorted(Comparator.comparing(AnalysisPartVM::getOrder))
+                                                .collect(Collectors.toList()))
+                                .overall(overallCategories)
+                                .build();
+        }
 
         @Override
         public AnswerResultVM getTestAnswers(UUID attemptId) {
-                TestAttempt testAttempt =
-                unitOfWork.getTestAttemptRepository().findById(attemptId).orElseThrow(
-                        ()
-                        -> new RuntimeException(
-                                "Test attempt not found for ID: " + attemptId));
+                TestAttempt testAttempt = unitOfWork.getTestAttemptRepository().findById(attemptId).orElseThrow(
+                                () -> new RuntimeException(
+                                                "Test attempt not found for ID: " + attemptId));
 
                 // Get all question responses for this attempt
-                List<QuestionResponse> questionResponses =
-                unitOfWork.getQuestionResponseRepository().findByTestAttemptId(attemptId);
+                List<QuestionResponse> questionResponses = unitOfWork.getQuestionResponseRepository()
+                                .findByTestAttemptId(attemptId);
 
                 // Create maps for quick lookup
                 Map<UUID, Set<UUID>> questionToSelectedOptionIds = new HashMap<>();
@@ -234,337 +238,415 @@ public AnalysisQuestionsVM getTestAttemptAnalysis(UUID attemptId) {
                 Map<UUID, Boolean> questionToIsCorrect = new HashMap<>();
 
                 for (QuestionResponse response : questionResponses) {
-                UUID questionId = response.getQuestion().getId();
+                        if (response.getQuestion() == null) {
+                                continue;
+                        }
+                        UUID questionId = response.getQuestion().getId();
 
-                // Map selected option IDs
-                questionToSelectedOptionIds.put(questionId,
-                        response.getSelectedOptions()
-                        .stream()
-                        .map(opt -> opt.getOption().getId())
-                        .collect(Collectors.toSet()));
+                        // Map selected option IDs
+                        questionToSelectedOptionIds.put(questionId,
+                                        response.getSelectedOptions()
+                                                        .stream()
+                                                        .map(opt -> opt.getOption().getId())
+                                                        .collect(Collectors.toSet()));
 
-                // Map text answers
-                if (response.getTextAnswer() != null
-                        && !response.getTextAnswer().isEmpty()) {
-                questionToTextAnswer.put(questionId, response.getTextAnswer());
+                        // Map text answers
+                        if (response.getTextAnswer() != null
+                                        && !response.getTextAnswer().isEmpty()) {
+                                questionToTextAnswer.put(questionId, response.getTextAnswer());
+                        }
+
+                        // Map correctness
+                        if (response.getIsCorrect() != null) {
+                                questionToIsCorrect.put(questionId, response.getIsCorrect());
+                        }
                 }
 
-                // Map correctness
-                if (response.getIsCorrect() != null) {
-                questionToIsCorrect.put(questionId, response.getIsCorrect());
-                }
-                }
-
-                List<TestPartAttempt> testPartAttempts =
-                unitOfWork.getTestPartAttemptRepository().findByTestAttemptId(attemptId);
+                List<TestPartAttempt> testPartAttempts = unitOfWork.getTestPartAttemptRepository()
+                                .findByTestAttemptId(attemptId);
 
                 List<Part> parts = testPartAttempts.stream()
-                                        .map(TestPartAttempt::getPart)
-                                        .filter(Objects::nonNull)
-                                        .collect(Collectors.toList());
-
-                List<PartResultVM> partResults =
-                parts.stream()
-                        .map(part -> {
-                        UUID partId = part.getId();
-                        UUID testId = testAttempt.getTest().getId();
-
-                        // Get all questions for this part
-                        List<QuestionResultVM> questionResults =
-                                unitOfWork.getTestPartRepository()
-                                .findByPartIdAndTestId(partId, testId)
-                                .stream()
-                                .flatMap(testPart -> {
-                                // Get questions from testPartQuestions with null checks
-                                Stream<Question> directQuestions =
-                                testPart.getTestPartQuestions().stream()
-                                        .filter(Objects::nonNull)
-                                        .map(tpq -> {
-                                            if (tpq == null || tpq.getQuestion() == null) {
-                                                return null;
-                                            }
-                                            Question original = tpq.getQuestion();
-                                            if (tpq.getDisplayOrder() != null) {
-                                                original.setOrder(tpq.getDisplayOrder());
-                                            }
-                                            return original;
-                                        })
-                                        .filter(Objects::nonNull);
-
-                                // Get questions from testPartQuestionSets with null checks
-                                Stream<Question> questionSetQuestions =
-                                testPart.getTestPartQuestionSets().stream()
-                                        .filter(Objects::nonNull)
-                                        .flatMap(qs -> {
-                                            if (qs == null || qs.getQuestionSet() == null || qs.getQuestionSet().getQuestionSetItems() == null) {
-                                                return Stream.empty();
-                                            }
-                                            return qs.getQuestionSet().getQuestionSetItems().stream()
-                                                    .filter(Objects::nonNull)
-                                                    .sorted(Comparator.comparing(
-                                                            QuestionSetItem::getOrder,
-                                                            Comparator.nullsLast(Comparator.naturalOrder())
-                                                    ))
-                                                    .map(qsi -> {
-                                                        if (qsi == null || qsi.getQuestion() == null) {
-                                                            return null;
-                                                        }
-                                                        Question original = qsi.getQuestion();
-                                                        Integer order = qsi.getOrder();
-                                                        Integer displayOrder = qs.getDisplayOrder();
-                                                        if (order != null && displayOrder != null) {
-                                                            original.setOrder(order - 1 + displayOrder);
-                                                        }
-                                                        return original;
-                                                    })
-                                                    .filter(Objects::nonNull);
-                                        });
-
-
-                                // Combine both streams and map to QuestionResultVM with null checks
-                                return Stream
-                                        .concat(directQuestions, questionSetQuestions)
-                                        .filter(Objects::nonNull)
-                                        .map(question -> {
-                                            // Skip if question is null
-                                            if (question == null) {
-                                                return null;
-                                            }
-
-                                            QuestionResultVM.QuestionResultVMBuilder builder =
-                                                    QuestionResultVM.builder()
-                                                            .order(question.getOrder() != null ? question.getOrder() : 0)
-                                                            .context(question.getPrompt() != null ? question.getPrompt() : "");
-
-                                            // Set options if available
-                                            if (question.getOptions() != null && !question.getOptions().isEmpty()) {
-                                                // Map options with null checks
-                                                List<OptionResultVM> options = question.getOptions().stream()
-                                                        .filter(Objects::nonNull)
-                                                        .map(option -> {
-                                                            if (option == null) {
-                                                                return null;
-                                                            }
-                                                            Set<UUID> selectedOptionIds = questionToSelectedOptionIds.getOrDefault(
-                                                                    question.getId(),
-                                                                    Collections.emptySet()
-                                                            );
-                                                            return OptionResultVM.builder()
-                                                                    .id(option.getId() != null ? option.getId().toString() : "")
-                                                                    .text(option.getText() != null ? option.getText() : "")
-                                                                    .isCorrect(option.isCorrect())
-                                                                    .isSelected(option.getId() != null && selectedOptionIds.contains(option.getId()))
-                                                                    .build();
-                                                        })
-                                                        .filter(Objects::nonNull)
-                                                        .collect(Collectors.toList());
-
-                                                builder.options(options);
-
-                                                // Keep the correct options for backward compatibility
-                                                List<OptionResultVM> correctOptions = question.getOptions().stream()
-                                                        .filter(Objects::nonNull)
-                                                        .filter(Option::isCorrect)
-                                                        .map(option -> OptionResultVM.builder()
-                                                                .id(option.getId() != null ? option.getId().toString() : "")
-                                                                .text(option.getText() != null ? option.getText() : "")
-                                                                .isCorrect(true)
-                                                                .build())
-                                                        .collect(Collectors.toList());
-
-                                                builder.correctOptions(correctOptions);
-                                        }
-
-                                        // Set fill-in-blank answers if available
-                                        if (question.getFillBlankAnswers() != null && !question.getFillBlankAnswers().isEmpty()) {
-                                            builder.correctAnswers(
-                                                question.getFillBlankAnswers().stream()
-                                                    .filter(Objects::nonNull)
-                                                    .map(FillBlankAnswer::getAnswerText)
-                                                    .filter(Objects::nonNull)
-                                                    .collect(Collectors.toList())
-                                            );
-                                        }
-
-                                        // Set user answer if available
-                                        if (question.getId() != null) {
-                                            builder.userAnswer(questionToTextAnswer.get(question.getId()));
-                                            Boolean isCorrect = questionToIsCorrect.get(question.getId());
-                                            if (isCorrect != null) {
-                                                builder.isCorrect(isCorrect);
-                                            }
-                                        }
-
-                                        return builder.build();
-                                        });
-                                })
+                                .map(TestPartAttempt::getPart)
+                                .filter(Objects::nonNull)
                                 .collect(Collectors.toList());
 
-                        // Get part name and order
-                        String partName = "Part " + partId.toString();
-                        Integer partOrder = null;
+                List<PartResultVM> partResults = parts.stream()
+                                .map(part -> {
+                                        UUID partId = part.getId();
+                                        UUID testId = testAttempt.getTest().getId();
 
-                        // Find the test part to get the order index
-                        Optional<TestPart> testPartOpt =
-                                unitOfWork.getTestPartRepository()
-                                .findByPartIdAndTestId(partId, testId)
-                                .stream()
-                                .findFirst();
+                                        // Get all questions for this part
+                                        List<QuestionResultVM> questionResults = unitOfWork.getTestPartRepository()
+                                                        .findByPartIdAndTestId(partId, testId)
+                                                        .stream()
+                                                        .flatMap(testPart -> {
+                                                                // Get questions from testPartQuestions with null checks
+                                                                Stream<Question> directQuestions = testPart
+                                                                                .getTestPartQuestions().stream()
+                                                                                .filter(Objects::nonNull)
+                                                                                .map(tpq -> {
+                                                                                        if (tpq == null || tpq
+                                                                                                        .getQuestion() == null) {
+                                                                                                return null;
+                                                                                        }
+                                                                                        Question original = tpq
+                                                                                                        .getQuestion();
+                                                                                        if (tpq.getDisplayOrder() != null) {
+                                                                                                original.setOrder(tpq
+                                                                                                                .getDisplayOrder());
+                                                                                        }
+                                                                                        return original;
+                                                                                })
+                                                                                .filter(Objects::nonNull);
 
-                        if (testPartOpt.isPresent()) {
-                        TestPart testPart = testPartOpt.get();
-                        partOrder = testPart.getOrderIndex();
+                                                                // Get questions from testPartQuestionSets with null
+                                                                // checks
+                                                                Stream<Question> questionSetQuestions = testPart
+                                                                                .getTestPartQuestionSets().stream()
+                                                                                .filter(Objects::nonNull)
+                                                                                .flatMap(qs -> {
+                                                                                        if (qs == null || qs
+                                                                                                        .getQuestionSet() == null
+                                                                                                        || qs.getQuestionSet()
+                                                                                                                        .getQuestionSetItems() == null) {
+                                                                                                return Stream.empty();
+                                                                                        }
+                                                                                        return qs.getQuestionSet()
+                                                                                                        .getQuestionSetItems()
+                                                                                                        .stream()
+                                                                                                        .filter(Objects::nonNull)
+                                                                                                        .sorted(Comparator
+                                                                                                                        .comparing(
+                                                                                                                                        QuestionSetItem::getOrder,
+                                                                                                                                        Comparator.nullsLast(
+                                                                                                                                                        Comparator.naturalOrder())))
+                                                                                                        .map(qsi -> {
+                                                                                                                if (qsi == null || qsi
+                                                                                                                                .getQuestion() == null) {
+                                                                                                                        return null;
+                                                                                                                }
+                                                                                                                Question original = qsi
+                                                                                                                                .getQuestion();
+                                                                                                                Integer order = qsi
+                                                                                                                                .getOrder();
+                                                                                                                Integer displayOrder = qs
+                                                                                                                                .getDisplayOrder();
+                                                                                                                if (order != null
+                                                                                                                                && displayOrder != null) {
+                                                                                                                        original.setOrder(
+                                                                                                                                        order - 1 + displayOrder);
+                                                                                                                }
+                                                                                                                return original;
+                                                                                                        })
+                                                                                                        .filter(Objects::nonNull);
+                                                                                });
 
-                        // Get part name from the part entity
-                        Part partEntity = testPart.getPart();
-                        if (partEntity != null) {
-                                partName = partEntity.getName();
-                        }
-                        }
+                                                                // Combine both streams and map to QuestionResultVM with
+                                                                // null checks
+                                                                return Stream
+                                                                                .concat(directQuestions,
+                                                                                                questionSetQuestions)
+                                                                                .filter(Objects::nonNull)
+                                                                                .map(question -> {
+                                                                                        // Skip if question is null
+                                                                                        if (question == null) {
+                                                                                                return null;
+                                                                                        }
 
-                        return PartResultVM.builder()
-                                .partId(partId.toString())
-                                .name(partName)
-                                .order(partOrder)
-                                .questions(questionResults)
-                                .build();
-                        })
-                        .collect(Collectors.toList());
+                                                                                        QuestionResultVM.QuestionResultVMBuilder builder = QuestionResultVM
+                                                                                                        .builder()
+                                                                                                        .order(question.getOrder() != null
+                                                                                                                        ? question.getOrder()
+                                                                                                                        : 0)
+                                                                                                        .context(question
+                                                                                                                        .getPrompt() != null
+                                                                                                                                        ? question.getPrompt()
+                                                                                                                                        : "");
+
+                                                                                        // Set options if available
+                                                                                        if (question.getOptions() != null
+                                                                                                        && !question.getOptions()
+                                                                                                                        .isEmpty()) {
+                                                                                                // Map options with null
+                                                                                                // checks
+                                                                                                List<OptionResultVM> options = question
+                                                                                                                .getOptions()
+                                                                                                                .stream()
+                                                                                                                .filter(Objects::nonNull)
+                                                                                                                .map(option -> {
+                                                                                                                        if (option == null) {
+                                                                                                                                return null;
+                                                                                                                        }
+                                                                                                                        Set<UUID> selectedOptionIds = questionToSelectedOptionIds
+                                                                                                                                        .getOrDefault(
+                                                                                                                                                        question.getId(),
+                                                                                                                                                        Collections.emptySet());
+                                                                                                                        return OptionResultVM
+                                                                                                                                        .builder()
+                                                                                                                                        .id(option.getId() != null
+                                                                                                                                                        ? option.getId().toString()
+                                                                                                                                                        : "")
+                                                                                                                                        .text(option.getText() != null
+                                                                                                                                                        ? option.getText()
+                                                                                                                                                        : "")
+                                                                                                                                        .isCorrect(option
+                                                                                                                                                        .isCorrect())
+                                                                                                                                        .isSelected(option
+                                                                                                                                                        .getId() != null
+                                                                                                                                                        && selectedOptionIds
+                                                                                                                                                                        .contains(option.getId()))
+                                                                                                                                        .build();
+                                                                                                                })
+                                                                                                                .filter(Objects::nonNull)
+                                                                                                                .collect(Collectors
+                                                                                                                                .toList());
+
+                                                                                                builder.options(options);
+
+                                                                                                // Keep the correct
+                                                                                                // options for backward
+                                                                                                // compatibility
+                                                                                                List<OptionResultVM> correctOptions = question
+                                                                                                                .getOptions()
+                                                                                                                .stream()
+                                                                                                                .filter(Objects::nonNull)
+                                                                                                                .filter(Option::isCorrect)
+                                                                                                                .map(option -> OptionResultVM
+                                                                                                                                .builder()
+                                                                                                                                .id(option.getId() != null
+                                                                                                                                                ? option.getId().toString()
+                                                                                                                                                : "")
+                                                                                                                                .text(option.getText() != null
+                                                                                                                                                ? option.getText()
+                                                                                                                                                : "")
+                                                                                                                                .isCorrect(true)
+                                                                                                                                .build())
+                                                                                                                .collect(Collectors
+                                                                                                                                .toList());
+
+                                                                                                builder.correctOptions(
+                                                                                                                correctOptions);
+                                                                                        }
+
+                                                                                        // Set fill-in-blank answers if
+                                                                                        // available
+                                                                                        if (question.getFillBlankAnswers() != null
+                                                                                                        && !question.getFillBlankAnswers()
+                                                                                                                        .isEmpty()) {
+                                                                                                builder.correctAnswers(
+                                                                                                                question.getFillBlankAnswers()
+                                                                                                                                .stream()
+                                                                                                                                .filter(Objects::nonNull)
+                                                                                                                                .map(FillBlankAnswer::getAnswerText)
+                                                                                                                                .filter(Objects::nonNull)
+                                                                                                                                .collect(Collectors
+                                                                                                                                                .toList()));
+                                                                                        }
+
+                                                                                        // Set user answer if available
+                                                                                        if (question.getId() != null) {
+                                                                                                builder.userAnswer(
+                                                                                                                questionToTextAnswer
+                                                                                                                                .get(question.getId()));
+                                                                                                Boolean isCorrect = questionToIsCorrect
+                                                                                                                .get(question.getId());
+                                                                                                if (isCorrect != null) {
+                                                                                                        builder.isCorrect(
+                                                                                                                        isCorrect);
+                                                                                                }
+                                                                                        }
+
+                                                                                        return builder.build();
+                                                                                });
+                                                        })
+                                                        .collect(Collectors.toList());
+
+                                        // Get part name and order
+                                        String partName = "Part " + partId.toString();
+                                        Integer partOrder = null;
+
+                                        // Find the test part to get the order index
+                                        Optional<TestPart> testPartOpt = unitOfWork.getTestPartRepository()
+                                                        .findByPartIdAndTestId(partId, testId)
+                                                        .stream()
+                                                        .findFirst();
+
+                                        if (testPartOpt.isPresent()) {
+                                                TestPart testPart = testPartOpt.get();
+                                                partOrder = testPart.getOrderIndex();
+
+                                                // Get part name from the part entity
+                                                Part partEntity = testPart.getPart();
+                                                if (partEntity != null) {
+                                                        partName = partEntity.getName();
+                                                }
+                                        }
+
+                                        return PartResultVM.builder()
+                                                        .partId(partId.toString())
+                                                        .name(partName)
+                                                        .order(partOrder)
+                                                        .questions(questionResults)
+                                                        .build();
+                                })
+                                .collect(Collectors.toList());
 
                 // Get all questions across all parts for the overall list
                 Test test = testAttempt.getTest();
 
                 // Get direct questions from testQuestionDetails
-                List<QuestionResultVM> directQuestions =
-                test.getTestQuestionDetails()
-                        .stream()
-                        .sorted(Comparator.comparing(TestQuestionDetail::getOrder))
-                        .map(detail -> {
-                        Question question = detail.getQuestion();
-                        return QuestionResultVM.builder()
-                                .order(detail.getOrder())
-                                .context(question.getPrompt()) // Using prompt as context
-                                .explanation(null) // No explanation field in Question model
-                                .transcript(question.getAudioUrl()) // Using audioUrl as
-                                // transcript
-                                .options(question.getOptions() != null
-                                        ? question.getOptions()
-                                        .stream()
-                                        .map(option -> {
-                                                Set<UUID> selectedOptionIds =
-                                                questionToSelectedOptionIds.getOrDefault(
-                                                        question.getId(),
-                                                        Collections.emptySet());
-                                                return OptionResultVM.builder()
-                                                .id(option.getId().toString())
-                                                .text(option.getText())
-                                                .isCorrect(option.isCorrect())
-                                                .isSelected(selectedOptionIds.contains(
-                                                        option.getId()))
-                                                .build();
-                                        })
-                                        .collect(Collectors.toList())
-                                        : Collections.emptyList())
-                                .correctOptions(question.getOptions() != null
-                                        ? question.getOptions()
-                                        .stream()
-                                        .filter(Option::isCorrect)
-                                        .map(option
-                                                -> OptionResultVM.builder()
-                                                        .id(option.getId().toString())
-                                                        .text(option.getText())
-                                                        .isCorrect(true)
-                                                        .build())
-                                        .collect(Collectors.toList())
-                                        : Collections.emptyList())
-                                .correctAnswers(question.getFillBlankAnswers() != null
-                                        ? question.getFillBlankAnswers()
-                                        .stream()
-                                        .map(FillBlankAnswer::getAnswerText)
-                                        .collect(Collectors.toList())
-                                        : Collections.emptyList())
-                                .userAnswer(questionToTextAnswer.get(question.getId()))
-                                .isCorrect(questionToIsCorrect.get(question.getId()))
-                                .build();
-                        })
-                        .collect(Collectors.toList());
+                List<QuestionResultVM> directQuestions = test.getTestQuestionDetails()
+                                .stream()
+                                .sorted(Comparator.comparing(TestQuestionDetail::getOrder))
+                                .map(detail -> {
+                                        Question question = detail.getQuestion();
+                                        if (question == null) {
+                                                return null;
+                                        }
+                                        return QuestionResultVM.builder()
+                                                        .order(detail.getOrder())
+                                                        .context(question.getPrompt()) // Using prompt as context
+                                                        .explanation(null) // No explanation field in Question model
+                                                        .transcript(question.getAudioUrl()) // Using audioUrl as
+                                                        // transcript
+                                                        .options(question.getOptions() != null
+                                                                        ? question.getOptions()
+                                                                                        .stream()
+                                                                                        .map(option -> {
+                                                                                                Set<UUID> selectedOptionIds = questionToSelectedOptionIds
+                                                                                                                .getOrDefault(
+                                                                                                                                question.getId(),
+                                                                                                                                Collections.emptySet());
+                                                                                                return OptionResultVM
+                                                                                                                .builder()
+                                                                                                                .id(option.getId()
+                                                                                                                                .toString())
+                                                                                                                .text(option.getText())
+                                                                                                                .isCorrect(option
+                                                                                                                                .isCorrect())
+                                                                                                                .isSelected(selectedOptionIds
+                                                                                                                                .contains(
+                                                                                                                                                option.getId()))
+                                                                                                                .build();
+                                                                                        })
+                                                                                        .collect(Collectors.toList())
+                                                                        : Collections.emptyList())
+                                                        .correctOptions(question.getOptions() != null
+                                                                        ? question.getOptions()
+                                                                                        .stream()
+                                                                                        .filter(Option::isCorrect)
+                                                                                        .map(option -> OptionResultVM
+                                                                                                        .builder()
+                                                                                                        .id(option.getId()
+                                                                                                                        .toString())
+                                                                                                        .text(option.getText())
+                                                                                                        .isCorrect(true)
+                                                                                                        .build())
+                                                                                        .collect(Collectors.toList())
+                                                                        : Collections.emptyList())
+                                                        .correctAnswers(question.getFillBlankAnswers() != null
+                                                                        ? question.getFillBlankAnswers()
+                                                                                        .stream()
+                                                                                        .map(FillBlankAnswer::getAnswerText)
+                                                                                        .collect(Collectors.toList())
+                                                                        : Collections.emptyList())
+                                                        .userAnswer(questionToTextAnswer.get(question.getId()))
+                                                        .isCorrect(questionToIsCorrect.get(question.getId()))
+                                                        .build();
+                                })
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toList());
 
                 // Get questions from question sets in testQuestionSetDetails
-                List<QuestionResultVM> questionSetQuestions =
-                test.getTestQuestionSetDetails()
-                        .stream()
-                        .sorted(Comparator.comparing(TestQuestionSetDetail::getOrder))
-                        .flatMap(detail -> {
-                        QuestionSet questionSet = detail.getQuestionSet();
-                        return questionSet.getQuestionSetItems()
+                List<QuestionResultVM> questionSetQuestions = test.getTestQuestionSetDetails()
                                 .stream()
-                                .sorted(Comparator.comparing(QuestionSetItem::getOrder))
-                                .map(item -> {
-                                Question question = item.getQuestion();
-                                return QuestionResultVM.builder()
-                                .order(detail.getOrder() - 1 + item.getOrder())
-                                .context(question.getPrompt())
-                                .explanation(null)
-                                .transcript(question.getAudioUrl())
-                                .options(question.getOptions() != null
-                                        ? question.getOptions()
-                                                .stream()
-                                                .map(option
-                                                        -> OptionResultVM.builder()
-                                                        .id(option.getId().toString())
-                                                        .text(option.getText())
-                                                        .isCorrect(option.isCorrect())
-                                                        .build())
-                                                .collect(Collectors.toList())
-                                        : Collections.emptyList())
-                                .correctOptions(question.getOptions() != null
-                                        ? question.getOptions()
-                                                .stream()
-                                                .filter(Option::isCorrect)
-                                                .map(option
-                                                        -> OptionResultVM.builder()
-                                                        .id(option.getId().toString())
-                                                        .text(option.getText())
-                                                        .isCorrect(true)
-                                                        .build())
-                                                .collect(Collectors.toList())
-                                        : Collections.emptyList())
-                                .correctAnswers(question.getFillBlankAnswers() != null
-                                        ? question.getFillBlankAnswers()
-                                                .stream()
-                                                .map(FillBlankAnswer::getAnswerText)
-                                                .collect(Collectors.toList())
-                                        : Collections.emptyList())
-                                .userAnswer(questionToTextAnswer.get(question.getId()))
-                                .isCorrect(questionToIsCorrect.get(question.getId()))
-                                .build();
-                                });
-                        })
-                        .collect(Collectors.toList());
+                                .sorted(Comparator.comparing(TestQuestionSetDetail::getOrder))
+                                .flatMap(detail -> {
+                                        QuestionSet questionSet = detail.getQuestionSet();
+                                        return questionSet.getQuestionSetItems()
+                                                        .stream()
+                                                        .sorted(Comparator.comparing(QuestionSetItem::getOrder))
+                                                        .map(item -> {
+                                                                Question question = item.getQuestion();
+                                                                if (question == null) {
+                                                                        return null;
+                                                                }
+                                                                return QuestionResultVM.builder()
+                                                                                .order(detail.getOrder() - 1
+                                                                                                + item.getOrder())
+                                                                                .context(question.getPrompt())
+                                                                                .explanation(null)
+                                                                                .transcript(question.getAudioUrl())
+                                                                                .options(question.getOptions() != null
+                                                                                                ? question.getOptions()
+                                                                                                                .stream()
+                                                                                                                .map(option -> OptionResultVM
+                                                                                                                                .builder()
+                                                                                                                                .id(option.getId()
+                                                                                                                                                .toString())
+                                                                                                                                .text(option.getText())
+                                                                                                                                .isCorrect(option
+                                                                                                                                                .isCorrect())
+                                                                                                                                .build())
+                                                                                                                .collect(Collectors
+                                                                                                                                .toList())
+                                                                                                : Collections.emptyList())
+                                                                                .correctOptions(question
+                                                                                                .getOptions() != null
+                                                                                                                ? question.getOptions()
+                                                                                                                                .stream()
+                                                                                                                                .filter(Option::isCorrect)
+                                                                                                                                .map(option -> OptionResultVM
+                                                                                                                                                .builder()
+                                                                                                                                                .id(option.getId()
+                                                                                                                                                                .toString())
+                                                                                                                                                .text(option.getText())
+                                                                                                                                                .isCorrect(true)
+                                                                                                                                                .build())
+                                                                                                                                .collect(Collectors
+                                                                                                                                                .toList())
+                                                                                                                : Collections.emptyList())
+                                                                                .correctAnswers(question
+                                                                                                .getFillBlankAnswers() != null
+                                                                                                                ? question.getFillBlankAnswers()
+                                                                                                                                .stream()
+                                                                                                                                .map(FillBlankAnswer::getAnswerText)
+                                                                                                                                .collect(Collectors
+                                                                                                                                                .toList())
+                                                                                                                : Collections.emptyList())
+                                                                                .userAnswer(questionToTextAnswer
+                                                                                                .get(question.getId()))
+                                                                                .isCorrect(questionToIsCorrect
+                                                                                                .get(question.getId()))
+                                                                                .build();
+                                                        });
+                                })
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toList());
 
                 // Combine both lists and sort by order
-                List<QuestionResultVM> allQuestions =
-                Stream.concat(directQuestions.stream(), questionSetQuestions.stream())
-                        .sorted(Comparator.comparing(QuestionResultVM::getOrder))
-                        .collect(Collectors.toList());
+                List<QuestionResultVM> allQuestions = Stream
+                                .concat(directQuestions.stream(), questionSetQuestions.stream())
+                                .sorted(Comparator.comparing(QuestionResultVM::getOrder))
+                                .collect(Collectors.toList());
 
                 // Sort parts by order and questions within each part
-                List<PartResultVM> sortedParts =
-                partResults.stream()
-                        .peek(part -> {
-                            if (part.getQuestions() != null) {
-                                part.getQuestions().sort(Comparator.comparing(QuestionResultVM::getOrder));
-                            }
-                        })
-                        .sorted(Comparator.comparing(PartResultVM::getOrder,
-                        Comparator.nullsLast(Comparator.naturalOrder())))
-                        .collect(Collectors.toList());
+                List<PartResultVM> sortedParts = partResults.stream()
+                                .peek(part -> {
+                                        if (part.getQuestions() != null) {
+                                                part.getQuestions()
+                                                                .sort(Comparator.comparing(QuestionResultVM::getOrder));
+                                        }
+                                })
+                                .sorted(Comparator.comparing(PartResultVM::getOrder,
+                                                Comparator.nullsLast(Comparator.naturalOrder())))
+                                .collect(Collectors.toList());
 
                 // Build the final result
                 return AnswerResultVM.builder()
-                .parts(sortedParts)
-                .overall(allQuestions)
-                .build();
+                                .parts(sortedParts)
+                                .overall(allQuestions)
+                                .build();
         }
 
         /**
