@@ -3,10 +3,14 @@ package com.example.exam.prep.controller;
 import com.example.exam.prep.constant.response.TestResponseMessage;
 import com.example.exam.prep.model.viewmodels.PracticeTestInfoVM;
 import com.example.exam.prep.model.viewmodels.TestAttemptInfoVM;
+import com.example.exam.prep.model.viewmodels.TestListItemVM;
 import com.example.exam.prep.model.viewmodels.response.ApiResponse;
 import com.example.exam.prep.service.ITestInfoService;
 import com.example.exam.prep.service.ITestService;
 import com.example.exam.prep.viewmodel.test.answer.TestAnswerVM;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -94,6 +98,27 @@ public class TestInfoController {
         try {
             TestAnswerVM answers = testService.testAnswers(testId);
             return ResponseEntity.ok(ApiResponse.success(answers, TestResponseMessage.TEST_RETRIEVED.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), 400));
+        }
+    }
+
+    /**
+     * Get paginated list of tests with optional filtering by test category and keyword search
+     * 
+     * @param testCategoryId Optional test category ID to filter tests
+     * @param keyword Optional keyword to search in test name
+     * @param pageable Pagination parameters (page, size, sort)
+     * @return Page of TestListItemVM with test information
+     */
+    @GetMapping("/list")
+    public ResponseEntity<ApiResponse<Page<TestListItemVM>>> getTestList(
+            @RequestParam(required = false) UUID testCategoryId,
+            @RequestParam(required = false) String keyword,
+            @PageableDefault(size = 10, sort = "insertedAt") Pageable pageable) {
+        try {
+            Page<TestListItemVM> testList = testInfoService.getTestList(testCategoryId, keyword, pageable);
+            return ResponseEntity.ok(ApiResponse.success(testList, TestResponseMessage.TESTS_RETRIEVED.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), 400));
         }

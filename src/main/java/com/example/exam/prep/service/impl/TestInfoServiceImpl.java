@@ -9,6 +9,7 @@ import com.example.exam.prep.model.TestPartQuestionSet;
 import com.example.exam.prep.model.User;
 import com.example.exam.prep.model.viewmodels.PracticeTestInfoVM;
 import com.example.exam.prep.model.viewmodels.TestAttemptInfoVM;
+import com.example.exam.prep.model.viewmodels.TestListItemVM;
 import com.example.exam.prep.repository.ITestAttemptRepository;
 import com.example.exam.prep.repository.ITestQuestionDetailRepository;
 import com.example.exam.prep.repository.ITestRepository;
@@ -16,6 +17,9 @@ import com.example.exam.prep.repository.IUserRepository;
 import com.example.exam.prep.repository.ITestPartRepository;
 import com.example.exam.prep.service.ITestInfoService;
 import com.example.exam.prep.viewmodel.TestPartInfoVM;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
@@ -345,5 +349,81 @@ public class TestInfoServiceImpl implements ITestInfoService {
                 .sum();
                 
         return directQuestions + questionsFromSets;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TestListItemVM> getTestList(UUID testCategoryId, String keyword, Pageable pageable) {
+        // Fetch tests with pagination, optional category filter, and keyword search
+        Page<Test> testPage = testRepository.findByTestCategoryIdAndKeyword(testCategoryId, keyword, pageable);
+
+        // Map each test to TestListItemVM
+        List<TestListItemVM> testListItems = testPage.getContent().stream()
+                .map(this::mapToTestListItemVM)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(testListItems, pageable, testPage.getTotalElements());
+    }
+
+    private TestListItemVM mapToTestListItemVM(Test test) {
+        TestListItemVM vm = new TestListItemVM();
+        
+        // Set test ID
+        vm.setId(test.getId());
+        
+        // Get skills from testSkills relationship (null-safe)
+        List<String> skills = new ArrayList<>();
+        if (test.getTestSkills() != null) {
+            skills = test.getTestSkills().stream()
+                    .map(testSkill -> testSkill != null && testSkill.getSkill() != null ? testSkill.getSkill().getName()
+                            : null)
+                    .filter(name -> name != null && !name.isBlank())
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
+        
+        // If no skills found, use the legacy skill field as fallback
+        if (skills.isEmpty() && test.getSkill() != null && !test.getSkill().isEmpty()) {
+            skills = List.of(test.getSkill());
+        }
+        vm.setSkills(skills);
+        
+        // Set test name
+        vm.setTestName(test.getName());
+        
+        // Set duration
+        vm.setDuration(calculateTestDuration(test) + " phút");
+        
+        // Calculate sections count
+        int sectionCount = 0;
+        if (test.getTestParts() != null && !test.getTestParts().isEmpty()) {
+            sectionCount = test.getTestParts().size();
+        }
+        vm.setSections(sectionCount);
+        
+        // Calculate questions count
+        int questionCount;
+        if (test.getTestParts() == null || test.getTestParts().isEmpty()) {
+            // If test has no parts, count questions from TestQuestionDetail and TestQuestionSetDetail
+            int directQuestions = testQuestionDetailRepository.countByTestId(test.getId());
+            int questionSetQuestions = testQuestionDetailRepository.countQuestionsInQuestionSetsByTestId(test.getId());
+            questionCount = directQuestions + questionSetQuestions;
+        } else {
+            // If test has parts, count questions from TestPartDetail
+            questionCount = testQuestionDetailRepository.countQuestionsInTestPartsByTestId(test.getId());
+        }
+        vm.setQuestions(questionCount);
+        
+        // Get practiced users count
+        int practicedUserCount = testAttemptRepository.countDistinctUsersByTestId(test.getId());
+        vm.setPracticedUsers(practicedUserCount);
+        
+        // Comments count (placeholder)
+        vm.setComments(0);
+        
+        // Set note
+        vm.setNote(generateTestNote(test));
+        
+        return vm;
     }
 }
