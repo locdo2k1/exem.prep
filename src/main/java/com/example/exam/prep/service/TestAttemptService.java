@@ -9,6 +9,8 @@ import com.example.exam.prep.model.TestPart;
 import com.example.exam.prep.model.TestPartAttempt;
 import com.example.exam.prep.model.User;
 import com.example.exam.prep.repository.ITestAttemptRepository;
+import com.example.exam.prep.repository.IUserRepository;
+import com.example.exam.prep.util.AuthHelper;
 import com.example.exam.prep.service.base.BaseService;
 import com.example.exam.prep.unitofwork.IUnitOfWork;
 import com.example.exam.prep.vm.test.TestVM;
@@ -27,8 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import com.example.exam.prep.model.viewmodels.TestAttemptInfoVM;
 import com.example.exam.prep.model.viewmodels.TestAttemptWithNameVM;
@@ -43,21 +45,27 @@ import com.example.exam.prep.repository.ITestQuestionSetDetailRepository;
 public class TestAttemptService extends BaseService<TestAttempt> implements ITestAttemptService {
     
     private final IUnitOfWork unitOfWork;
+    private final IUserRepository userRepository;
     private final IUserService userService;
+    private final AuthHelper authHelper;
     private final ITestService testService;
     private final IQuestionResponseRepository questionResponseRepository;
     private final ITestQuestionDetailRepository testQuestionDetailRepository;
     private final ITestQuestionSetDetailRepository testQuestionSetDetailRepository;
     
     public TestAttemptService(IUnitOfWork unitOfWork, 
-                            IUserService userService, 
+                            IUserRepository userRepository, 
+                            IUserService userService,
+                            AuthHelper authHelper,
                             ITestService testService,
                             IQuestionResponseRepository questionResponseRepository,
                             ITestQuestionDetailRepository testQuestionDetailRepository,
                             ITestQuestionSetDetailRepository testQuestionSetDetailRepository) {
         super(unitOfWork.getTestAttemptRepository());
         this.unitOfWork = unitOfWork;
+        this.userRepository = userRepository;
         this.userService = userService;
+        this.authHelper = authHelper;
         this.testService = testService;
         this.questionResponseRepository = questionResponseRepository;
         this.testQuestionDetailRepository = testQuestionDetailRepository;
@@ -99,6 +107,12 @@ public class TestAttemptService extends BaseService<TestAttempt> implements ITes
     @Override
     @Transactional
     public TestAttempt submitTestAttempt(UUID attemptId, UUID userId) {
+        if (userId == null) {
+            userId = authHelper.getAuthenticatedUserId();
+            if (userId == null) {
+                throw new IllegalStateException("User is not authenticated or user not found");
+            }
+        }
         TestAttempt attempt = getValidAttempt(attemptId, userId);
         
         if (attempt.getStatus() != TestStatus.ONGOING) {

@@ -3,6 +3,8 @@ package com.example.exam.prep.controller;
 import com.example.exam.prep.model.FileInfo;
 import com.example.exam.prep.service.IFileStorageService;
 import com.example.exam.prep.service.FileDownloadService;
+import com.example.exam.prep.dto.ShareLinkRequest;
+import com.example.exam.prep.dto.ShareLinkResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -115,5 +117,33 @@ public class FileController {
     @GetMapping("/download/{fileId}")
     public ResponseEntity<byte[]> downloadFileById(@PathVariable UUID fileId) {
         return fileDownloadService.downloadFile(fileId);
+    }
+
+    /**
+     * Creates a shareable link for a file in Dropbox
+     * @param request The share link request containing path and settings
+     * @return The shareable link information
+     */
+    @PostMapping("/share-link")
+    public ResponseEntity<?> createShareLink(@RequestBody ShareLinkRequest request) {
+        try {
+            String shareableLink = fileStorageService.createShareableLink(
+                request.getPath(),
+                request.getSettings().getAccess(),
+                request.getSettings().isAllow_download(),
+                request.getSettings().getAudience(),
+                request.getSettings().getRequested_visibility()
+            );
+            
+            ShareLinkResponse response = new ShareLinkResponse();
+            response.setUrl(shareableLink);
+            
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to create shareable link: " + e.getMessage());
+        }
     }
 }
