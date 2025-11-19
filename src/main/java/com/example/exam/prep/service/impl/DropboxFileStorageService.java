@@ -20,6 +20,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.UUID;
+import com.example.exam.prep.util.DropboxLinkConverter;
 
 @Service
 public class DropboxFileStorageService implements IFileStorageService {
@@ -43,8 +44,8 @@ public class DropboxFileStorageService implements IFileStorageService {
             String normalizedPath = normalizePath(path);
             String fileName = file.getOriginalFilename();
             String filePath = String.format("/%s/%s",
-                normalizedPath, 
-                fileName).replaceAll("//+", "/");
+                    normalizedPath,
+                    fileName).replaceAll("//+", "/");
 
             // Upload file to Dropbox
             try (InputStream in = file.getInputStream()) {
@@ -107,8 +108,8 @@ public class DropboxFileStorageService implements IFileStorageService {
                 String normalizedPath = normalizePath(path);
                 String fileName = file.getOriginalFilename();
                 String filePath = String.format("/%s/%s",
-                    normalizedPath, 
-                    fileName).replaceAll("//+", "/");
+                        normalizedPath,
+                        fileName).replaceAll("//+", "/");
 
                 // Upload file to Dropbox
                 try (InputStream in = file.getInputStream()) {
@@ -134,7 +135,7 @@ public class DropboxFileStorageService implements IFileStorageService {
                 throw new IOException("Failed to upload file to Dropbox", e);
             }
         }
-        
+
         return uploadedFiles;
     }
 
@@ -147,17 +148,17 @@ public class DropboxFileStorageService implements IFileStorageService {
     @Override
     public String getTemporaryLink(UUID fileId) throws Exception {
         FileInfo fileInfo = getFileInfo(fileId);
-        
+
         // Check if we have a valid URL that hasn't expired
-        if (fileInfo.getUrl() != null && fileInfo.getUrlExpiresAt() != null && 
-            fileInfo.getUrlExpiresAt().isAfter(LocalDateTime.now())) {
+        if (fileInfo.getUrl() != null && fileInfo.getUrlExpiresAt() != null &&
+                fileInfo.getUrlExpiresAt().isAfter(LocalDateTime.now())) {
             return fileInfo.getUrl();
         }
-        
+
         // Generate new temporary link if needed
         // updateTemporaryUrl(fileInfo);
         unitOfWork.getFileInfoRepository().save(fileInfo);
-        
+
         return fileInfo.getUrl();
     }
 
@@ -182,14 +183,14 @@ public class DropboxFileStorageService implements IFileStorageService {
             // Get file info to get the path
             FileInfo fileInfo = unitOfWork.getFileInfoRepository().findById(fileId)
                     .orElseThrow(() -> new Exception("File not found with id: " + fileId));
-            
+
             // Create output stream to store the file data
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            
+
             // Download the file from Dropbox
             dropboxClient.files().downloadBuilder(fileInfo.getFilePath())
                     .download(outputStream);
-            
+
             return outputStream.toByteArray();
         } catch (DbxException e) {
             throw new Exception("Error downloading file from Dropbox", e);
@@ -200,11 +201,11 @@ public class DropboxFileStorageService implements IFileStorageService {
         try {
             SharedLinkMetadata sharedLink = dropboxClient.sharing().createSharedLinkWithSettings(
                     fileInfo.getDropboxPathLower());
-            
+
             // Convert to direct download link
             String directUrl = sharedLink.getUrl().replace("www.dropbox.com", "dl.dropboxusercontent.com")
                     .replace("?dl=0", "");
-            
+
             fileInfo.setUrl(directUrl);
             fileInfo.setUrlExpiresAt(LocalDateTime.now().plusHours(4)); // 4 hours from now
         } catch (Exception e) {
@@ -224,5 +225,73 @@ public class DropboxFileStorageService implements IFileStorageService {
         return date.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
+    }
+
+    @Override
+    public String createShareableLink(String path, String access, boolean allowDownload,
+            String audience, String requestedVisibility) throws Exception {
+        try {
+            // First, check if the file exists
+            if (!fileExists(path)) {
+                throw new IllegalArgumentException("File not found at path: " + path);
+            }
+
+            // Convert string parameters to enum values
+            com.dropbox.core.v2.sharing.RequestedVisibility visibility;
+            try {
+                visibility = com.dropbox.core.v2.sharing.RequestedVisibility.valueOf(requestedVisibility.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid requested visibility: " + requestedVisibility, e);
+            }
+
+            com.dropbox.core.v2.sharing.LinkAudience linkAudience;
+            try {
+                linkAudience = com.dropbox.core.v2.sharing.LinkAudience.valueOf(audience.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid audience: " + audience, e);
+            }
+
+            com.dropbox.core.v2.sharing.RequestedLinkAccessLevel accessLevel;
+            try {
+                accessLevel = com.dropbox.core.v2.sharing.RequestedLinkAccessLevel.valueOf(access.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid access level: " + access + ". Must be one of: " +
+                        java.util.Arrays.toString(com.dropbox.core.v2.sharing.RequestedLinkAccessLevel.values()), e);
+            }
+
+            // Create shared link settings
+            com.dropbox.core.v2.sharing.SharedLinkSettings settings = com.dropbox.core.v2.sharing.SharedLinkSettings
+                    .newBuilder()
+                    .withRequestedVisibility(visibility)
+                    .withAudience(linkAudience)
+                    .withAccess(accessLevel)
+                    .withAllowDownload(allowDownload)
+                    .build();
+
+            // Create the shared link with settings
+            com.dropbox.core.v2.sharing.SharedLinkMetadata sharedLinkMetadata = dropboxClient.sharing()
+                    .createSharedLinkWithSettings(path, settings);
+
+            // Convert to direct download link and return
+            String shareableUrl = sharedLinkMetadata.getUrl();
+            return DropboxLinkConverter.toRawLink(shareableUrl);
+        } catch (Exception e) {
+            if (e.getMessage().contains("shared_link_already_exists")) {
+                // If a shared link already exists, get the existing one
+                try {
+                    String existingUrl = dropboxClient.sharing().listSharedLinksBuilder()
+                            .withPath(path)
+                            .withDirectOnly(true)
+                            .start()
+                            .getLinks()
+                            .get(0)
+                            .getUrl();
+                    return DropboxLinkConverter.toRawLink(existingUrl);
+                } catch (DbxException ex) {
+                    throw new Exception("Failed to get existing shared link", ex);
+                }
+            }
+            throw new Exception("Failed to create shareable link: " + e.getMessage(), e);
+        }
     }
 }

@@ -31,4 +31,17 @@ public interface IFileStorageService {
      * @throws Exception if file is not found or error occurs during download
      */
     byte[] downloadFile(UUID fileId) throws Exception;
+    
+    /**
+     * Creates a shareable link for a file in Dropbox
+     * @param path The path of the file in Dropbox
+     * @param access The access level for the link (e.g., "viewer")
+     * @param allowDownload Whether to allow downloads
+     * @param audience The audience for the link (e.g., "public")
+     * @param requestedVisibility The visibility of the link (e.g., "public")
+     * @return The shareable link information
+     * @throws Exception if an error occurs while creating the shareable link
+     */
+    String createShareableLink(String path, String access, boolean allowDownload, 
+                             String audience, String requestedVisibility) throws Exception;
 }

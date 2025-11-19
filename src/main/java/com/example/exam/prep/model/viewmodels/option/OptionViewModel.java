@@ -11,4 +11,5 @@ public class OptionViewModel {
     private UUID id;
     private String text;
     private boolean isCorrect;
+    private Integer displayOrder;
 }

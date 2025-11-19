@@ -1,5 +1,6 @@
 package com.example.exam.prep.service.impl;
 
+import com.example.exam.prep.constant.status.TestStatus;
 import com.example.exam.prep.model.*;
 import com.example.exam.prep.model.request.QuestionAnswerRequest;
 import com.example.exam.prep.model.request.SubmitPracticeTestPartRequest;
@@ -11,33 +12,44 @@ import com.example.exam.prep.service.ITestPartAttemptService;
 import com.example.exam.prep.service.IPracticeTestService;
 import com.example.exam.prep.service.PartService;
 import com.example.exam.prep.viewmodel.TestPartAttemptVM;
+import com.example.exam.prep.util.AuthHelper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.exam.prep.viewmodel.practice_test.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.example.exam.prep.service.IFileStorageService;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class PracticeTestServiceImpl implements IPracticeTestService {
 
     private final ITestAttemptService testAttemptService;
     private final ITestPartAttemptService testPartAttemptService;
     private final PartService partService;
     private final IUnitOfWork unitOfWork;
+    private final AuthHelper authHelper;
+    private final IFileStorageService fileStorageService;
 
     @Autowired
     public PracticeTestServiceImpl(ITestAttemptService testAttemptService,
             ITestPartAttemptService testPartAttemptService,
             PartService partService,
-            IUnitOfWork unitOfWork) {
+            IUnitOfWork unitOfWork,
+            AuthHelper authHelper,
+            IFileStorageService fileStorageService) {
         this.testAttemptService = testAttemptService;
         this.testPartAttemptService = testPartAttemptService;
         this.partService = partService;
         this.unitOfWork = unitOfWork;
+        this.authHelper = authHelper;
+        this.fileStorageService = fileStorageService;
     }
 
     @Override
@@ -47,13 +59,27 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
 
     @Override
     public TestAttempt submitPracticeTestPart(SubmitPracticeTestPartRequest request) {
+        // Get the authenticated user ID
+        UUID userId = authHelper.getAuthenticatedUserIdOrThrow();
+        
+        // Get the user
+        User user = unitOfWork.getUserRepository().findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
         // Get the test attempt
         TestAttempt testAttempt = new TestAttempt();
         Test test = unitOfWork.getTestRepository().findById(request.getTestId())
                 .orElseThrow(() -> new ResourceNotFoundException("Test not found with id: " + request.getTestId()));
+                
+        // Set test and user information
         testAttempt.setTest(test);
+        testAttempt.setUser(user);
         testAttempt.setDurationSeconds(request.getDuration());
-        unitOfWork.getTestAttemptRepository().save(testAttempt);
+        testAttempt.setStartTime(Instant.now());
+        testAttempt.setStatus(TestStatus.ONGOING);
+        
+        // Save the test attempt
+        testAttempt = unitOfWork.getTestAttemptRepository().save(testAttempt);
 
         // Skip the loop if listPartId is null or empty
         if (request.getListPartId() != null && !request.getListPartId().isEmpty()) {
@@ -245,10 +271,28 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
      * Maps a FileInfo entity to a PracticeFileInfoVM view model
      */
     private PracticeFileInfoVM mapFileInfoToVM(FileInfo fileInfo) {
+        String fileUrl = fileInfo.getUrl();
+        
+        // If URL is not set, try to create a shareable link
+        if (fileUrl == null || fileUrl.isEmpty()) {
+            try {
+                fileUrl = fileStorageService.createShareableLink(
+                    fileInfo.getFilePath(),
+                    "viewer",  // access level
+                    true,      // allow download
+                    "public",  // audience
+                    "public"   // requested visibility
+                );
+            } catch (Exception e) {
+                // Log the error and use the existing URL (which might be null)
+                log.error("Failed to create shareable link for file: " + fileInfo.getFilePath(), e);
+            }
+        }
+        
         return new PracticeFileInfoVM(
                 fileInfo.getId(),
                 fileInfo.getFileName(),
-                fileInfo.getUrl(),
+                fileUrl,
                 fileInfo.getFileType(),
                 fileInfo.getFileSize());
     }

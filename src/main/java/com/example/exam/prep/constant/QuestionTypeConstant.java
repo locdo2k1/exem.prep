@@ -2,7 +2,8 @@ package com.example.exam.prep.constant;
 
 public enum QuestionTypeConstant {
     FILL_IN_THE_BLANK("Fill in the Blank"),
-    MULTIPLE_CHOICE("Multiple Choice");
+    MULTIPLE_CHOICE("Multiple Choice"),
+    SINGLE_CHOICE("Single Choice");
     
     private final String displayName;
     
