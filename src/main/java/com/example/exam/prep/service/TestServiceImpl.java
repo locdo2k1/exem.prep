@@ -557,6 +557,7 @@ public class TestServiceImpl implements ITestService {
                                         optionVM.setId(option.getId());
                                         optionVM.setText(option.getText());
                                         optionVM.setCorrect(option.isCorrect());
+                                        optionVM.setDisplayOrder(option.getDisplayOrder());
                                         return optionVM;
                                     })
                                     .collect(Collectors.toList());
@@ -635,6 +636,7 @@ public class TestServiceImpl implements ITestService {
                                                         optionVM.setId(option.getId());
                                                         optionVM.setText(option.getText());
                                                         optionVM.setCorrect(option.isCorrect());
+                                                        optionVM.setDisplayOrder(option.getDisplayOrder());
                                                         return optionVM;
                                                     })
                                                     .collect(Collectors.toList());

@@ -800,6 +800,7 @@ public class TestResultServiceImpl implements ITestResultService {
                 }
 
                 return TestInfoVM.builder()
+                                .testId(test.getId())
                                 .testName(test.getName())
                                 .partNames(partNames)
                                 .build();

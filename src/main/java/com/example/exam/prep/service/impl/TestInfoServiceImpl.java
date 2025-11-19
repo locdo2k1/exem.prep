@@ -188,6 +188,7 @@ public class TestInfoServiceImpl implements ITestInfoService {
         // Create and populate DTO
         PracticeTestInfoVM testInfo = new PracticeTestInfoVM();
         testInfo.setSkills(skills);
+        testInfo.setTestId(testId);
         testInfo.setTestName(test.getName());
         testInfo.setDuration(calculateTestDuration(test) + " phút");
         testInfo.setSections(sectionCount);
