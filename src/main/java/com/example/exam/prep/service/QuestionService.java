@@ -153,6 +153,7 @@ public class QuestionService {
                     createdOption.setText(option.getText());
                     createdOption.setCorrect(option.isCorrect());
                     createdOption.setQuestion(question);
+                    createdOption.setDisplayOrder(option.getDisplayOrder());
                     unitOfWork.getOptionRepository().save(createdOption);
                 }
             } catch (JsonProcessingException e) {
@@ -244,7 +245,7 @@ public class QuestionService {
 
                     // Handle options if provided
                     String multipleChoice = QuestionTypeConstant.MULTIPLE_CHOICE.toString();
-                    if (updateDto.getOptions() != null && !updateDto.getOptions().isEmpty() && questionType != null && questionType.getName().equals(multipleChoice)) {
+                    if (updateDto.getOptions() != null && !updateDto.getOptions().isEmpty() && questionType != null && (questionType.getName().equals(multipleChoice) || questionType.getName().equals(QuestionTypeConstant.SINGLE_CHOICE.toString()))) {
                         try {
                             // Clear existing options
                             existingQuestion.getOptions().forEach(option -> unitOfWork.getOptionRepository().delete(option));
@@ -262,6 +263,7 @@ public class QuestionService {
                                 Option option = new Option();
                                 option.setText(optionDto.getText());
                                 option.setCorrect(optionDto.isCorrect());
+                                option.setDisplayOrder(optionDto.getDisplayOrder());
                                 option.setQuestion(existingQuestion);
                                 unitOfWork.getOptionRepository().save(option);
                             }
@@ -345,8 +347,10 @@ public class QuestionService {
                                 optionVM.setId(option.getId());
                                 optionVM.setText(option.getText());
                                 optionVM.setCorrect(option.isCorrect());
+                                optionVM.setDisplayOrder(option.getDisplayOrder());
                                 return optionVM;
                             })
+                            .sorted(Comparator.comparingInt(OptionViewModel::getDisplayOrder))
                             .collect(Collectors.toList()));
                     // Map file infos to view models
             viewModel.setQuestionAudios(question.getFileInfos().stream()

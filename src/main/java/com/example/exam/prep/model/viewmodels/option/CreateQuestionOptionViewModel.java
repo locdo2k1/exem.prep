@@ -6,4 +6,5 @@ import lombok.Data;
 public class CreateQuestionOptionViewModel {
     private String text;
     private boolean correct;
+    private int displayOrder;
 }
