@@ -5,6 +5,7 @@ import com.example.exam.prep.model.TestPartAttempt;
 import com.example.exam.prep.viewmodel.practice_test.PracticePartVM;
 import com.example.exam.prep.viewmodel.practice_test.PracticeTestResultVM;
 import com.example.exam.prep.viewmodel.practice_test.PracticeTestVM;
+import com.example.exam.prep.viewmodel.practice_test.PracticeQuestionVM;
 
 import java.util.List;
 import com.example.exam.prep.model.request.SubmitPracticeTestPartRequest;
@@ -48,6 +49,15 @@ public interface IPracticeTestService {
      * @return PracticePartVM containing the part details
      */
     PracticePartVM getPracticePartById(UUID partId, UUID testId);
+
+    /**
+     * Get practice part details by part ID, test ID, and test attempt ID
+     * @param partId The ID of the part to retrieve
+     * @param testId The ID of the test that contains this part
+     * @param testAttemptId The ID of the test attempt to fetch correctness information
+     * @return PracticePartVM containing the part details with correctness information
+     */
+    PracticePartVM getPracticePartById(UUID partId, UUID testId, UUID testAttemptId);
     
     /**
      * Get practice test data for specific parts of a test
@@ -56,4 +66,20 @@ public interface IPracticeTestService {
      * @return PracticeTestVM containing the requested test parts
      */
     PracticeTestVM getPracticeTestByParts(UUID testId, java.util.Set<UUID> partIds);
+
+    /**
+     * Get practice test data for specific parts of a test with optional attempt correctness info
+     * @param testId The ID of the test
+     * @param partIds Optional set of part IDs to include in the practice test
+     * @param testAttemptId Optional ID of the test attempt to fetch correctness information
+     * @return PracticeTestVM containing the requested test parts with correctness if testAttemptId is provided
+     */
+    PracticeTestVM getPracticeTestByParts(UUID testId, java.util.Set<UUID> partIds, UUID testAttemptId);
+
+    /**
+     * Get all questions related to a specific test attempt, including correctness information
+     * @param testAttemptId The ID of the test attempt
+     * @return List of PracticeQuestionVM for this attempt
+     */
+    List<PracticeQuestionVM> getPracticeQuestionsByAttempt(UUID testAttemptId);
 }

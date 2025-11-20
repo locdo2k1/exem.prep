@@ -12,6 +12,7 @@ import com.example.exam.prep.vm.testresult.PartResultVM;
 import com.example.exam.prep.vm.testresult.TestResultOverallVM;
 import com.example.exam.prep.vm.testresult.TestInfoVM;
 import com.example.exam.prep.vm.testresult.AnalysisQuesCategory;
+import com.example.exam.prep.vm.PartViewModel;
 
 import java.util.stream.Stream;
 import java.util.Comparator;
@@ -68,6 +69,8 @@ public class TestResultServiceImpl implements ITestResultService {
                                 .sum();
 
                 int totalQuestions = 0;
+                List<PartViewModel> partsList = new ArrayList<>();
+                
                 if (!testPartAttempts.isEmpty()) {
                         for (TestPartAttempt testPartAttempt : testPartAttempts) {
                                 Part part = testPartAttempt.getPart();
@@ -98,6 +101,9 @@ public class TestResultServiceImpl implements ITestResultService {
                                 }
 
                                 totalQuestions += directQuestions + questionsInSets;
+                                
+                                // Add part to partsList
+                                partsList.add(PartViewModel.fromModel(part));
                         }
                 } else {
                         // If no test part attempts, count questions directly from TestQuestionDetail
@@ -137,6 +143,7 @@ public class TestResultServiceImpl implements ITestResultService {
                                                                 * 10000.0) / 100.0)
                                 .score(totalScore)
                                 .completionTime(TimeFormatHelper.formatSecondsToHms(testAttempt.getDurationSeconds()))
+                                .parts(partsList)
                                 .build();
         }
 
