@@ -188,6 +188,7 @@ public class TestInfoServiceImpl implements ITestInfoService {
         // Create and populate DTO
         PracticeTestInfoVM testInfo = new PracticeTestInfoVM();
         testInfo.setSkills(skills);
+        testInfo.setTestId(testId);
         testInfo.setTestName(test.getName());
         testInfo.setDuration(calculateTestDuration(test) + " phút");
         testInfo.setSections(sectionCount);
@@ -282,7 +283,23 @@ public class TestInfoServiceImpl implements ITestInfoService {
                 .sorted(Map.Entry.comparingByKey(Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
-        vm.setParts(parts);
+
+        List<UUID> partIds = attempt.getTestPartAttempts().stream()
+                .map(partAttempt -> {
+                    // Get the TestPart for this attempt's part
+                    TestPart testPart = partAttempt.getPart().getTestParts().stream()
+                            .filter(tp -> tp.getTest().equals(attempt.getTest()))
+                            .findFirst()
+                            .orElse(null);
+                    return testPart != null ? 
+                            Map.entry(testPart.getOrderIndex(), partAttempt.getPart().getId()) : 
+                            null;
+                })
+                .filter(Objects::nonNull)
+                .sorted(Map.Entry.comparingByKey(Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList());
+        vm.setPartIds(partIds);
 
         // Calculate total questions based on practice mode
         int totalQuestions;

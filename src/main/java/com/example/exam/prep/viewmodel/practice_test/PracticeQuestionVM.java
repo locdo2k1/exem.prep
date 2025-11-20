@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -21,6 +22,7 @@ public class PracticeQuestionVM {
     private int order;
     private List<PracticeOptionVM> options;
     private List<PracticeFileInfoVM> questionAudios; // For audio files
+    private Optional<Boolean> correct;
 
     // Alias for text to maintain backward compatibility
     public String getPrompt() {

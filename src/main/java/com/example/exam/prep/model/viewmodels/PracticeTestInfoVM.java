@@ -1,6 +1,7 @@
 package com.example.exam.prep.model.viewmodels;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.example.exam.prep.viewmodel.TestPartInfoVM;
 
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PracticeTestInfoVM {
+    private UUID testId;
     // e.g., "Listening, Reading, Writing, Speaking"    
     private List<String> skills;
     // e.g., "IELTS"
