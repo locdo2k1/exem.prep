@@ -981,9 +981,12 @@ public class TestServiceImpl implements ITestService {
                                         FlattenedQuestionVM flatQuestion = new FlattenedQuestionVM();
 
                                         // Set basic question info
-                                        flatQuestion.setOrder(testPartQuestionSet.getDisplayOrder() - 1 + item.getOrder());
                                         flatQuestion
-                                                .setPart(testPart.getPart().getName() != null ? testPart.getPart().getName() : "");
+                                                .setOrder(testPartQuestionSet.getDisplayOrder() - 1 + item.getOrder());
+                                        flatQuestion
+                                                .setPart(testPart.getPart().getName() != null
+                                                        ? testPart.getPart().getName()
+                                                        : "");
 
                                         // Set correct answer
                                         String correctAnswer = "";
