@@ -12,6 +12,7 @@ import com.example.exam.prep.vm.testresult.PartResultVM;
 import com.example.exam.prep.vm.testresult.TestResultOverallVM;
 import com.example.exam.prep.vm.testresult.TestInfoVM;
 import com.example.exam.prep.vm.testresult.AnalysisQuesCategory;
+import com.example.exam.prep.vm.testresult.FileInfoResultVM;
 import com.example.exam.prep.vm.PartViewModel;
 
 import java.util.stream.Stream;
@@ -43,6 +44,7 @@ import com.example.exam.prep.util.TimeFormatHelper;
 public class TestResultServiceImpl implements ITestResultService {
 
         private final IUnitOfWork unitOfWork;
+        private final IFileStorageService fileStorageService;
         private List<QuestionResponse> questionResponses;
 
         @Override
@@ -481,6 +483,21 @@ public class TestResultServiceImpl implements ITestResultService {
                                                                                                 }
                                                                                         }
 
+                                                                                        // Process file infos (e.g.,
+                                                                                        // audio files)
+                                                                                        if (question.getFileInfos() != null
+                                                                                                        && !question.getFileInfos()
+                                                                                                                        .isEmpty()) {
+                                                                                                List<FileInfoResultVM> fileInfoVMs = question
+                                                                                                                .getFileInfos()
+                                                                                                                .stream()
+                                                                                                                .map(this::mapFileInfoToVM)
+                                                                                                                .collect(Collectors
+                                                                                                                                .toList());
+                                                                                                builder.questionAudios(
+                                                                                                                fileInfoVMs);
+                                                                                        }
+
                                                                                         return builder.build();
                                                                                 })
                                                                                 .filter(Objects::nonNull);
@@ -581,6 +598,14 @@ public class TestResultServiceImpl implements ITestResultService {
                                                                         : Collections.emptyList())
                                                         .userAnswer(questionToTextAnswer.get(question.getId()))
                                                         .isCorrect(questionToIsCorrect.get(question.getId()))
+                                                        .questionAudios(question.getFileInfos() != null
+                                                                        && !question.getFileInfos().isEmpty()
+                                                                                        ? question.getFileInfos()
+                                                                                                        .stream()
+                                                                                                        .map(this::mapFileInfoToVM)
+                                                                                                        .collect(Collectors
+                                                                                                                        .toList())
+                                                                                        : null)
                                                         .build();
                                 })
                                 .filter(Objects::nonNull)
@@ -652,6 +677,16 @@ public class TestResultServiceImpl implements ITestResultService {
                                                                                                 .get(question.getId()))
                                                                                 .isCorrect(questionToIsCorrect
                                                                                                 .get(question.getId()))
+                                                                                .questionAudios(question
+                                                                                                .getFileInfos() != null
+                                                                                                && !question.getFileInfos()
+                                                                                                                .isEmpty()
+                                                                                                                                ? question.getFileInfos()
+                                                                                                                                                .stream()
+                                                                                                                                                .map(this::mapFileInfoToVM)
+                                                                                                                                                .collect(Collectors
+                                                                                                                                                                .toList())
+                                                                                                                                : null)
                                                                                 .build();
                                                         });
                                 })
@@ -839,6 +874,36 @@ public class TestResultServiceImpl implements ITestResultService {
                                 .testName(test.getName())
                                 .partNames(partNames)
                                 .build();
+        }
+
+        /**
+         * Maps a FileInfo entity to a FileInfoResultVM view model
+         */
+        private FileInfoResultVM mapFileInfoToVM(FileInfo fileInfo) {
+                String fileUrl = fileInfo.getUrl();
+
+                // If URL is not set, try to create a shareable link
+                if (fileUrl == null || fileUrl.isEmpty()) {
+                        try {
+                                fileUrl = fileStorageService.createShareableLink(
+                                                fileInfo.getFilePath(),
+                                                "viewer", // access level
+                                                true, // allow download
+                                                "public", // audience
+                                                "public" // requested visibility
+                                );
+                        } catch (Exception e) {
+                                // Log the error and use the existing URL (which might be null)
+                                log.error("Failed to create shareable link for file: " + fileInfo.getFilePath(), e);
+                        }
+                }
+
+                return new FileInfoResultVM(
+                                fileInfo.getId(),
+                                fileInfo.getFileName(),
+                                fileUrl,
+                                fileInfo.getFileType(),
+                                fileInfo.getFileSize());
         }
 
         @Override

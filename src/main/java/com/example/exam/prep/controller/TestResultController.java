@@ -40,6 +40,8 @@ public class TestResultController {
      * @param attemptId The ID of the specific attempt
      * @return List of test answers with question and selected options, including:
      *         - Transcription (audio URL) for audio/video questions
+     *         - Question audio files (with URLs generated similar to practice
+     *         tests)
      *         - Outer content (question set description) if question belongs to a
      *         question set
      */
