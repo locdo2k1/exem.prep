@@ -690,6 +690,7 @@ public class TestServiceImpl implements ITestService {
                     .map(testSkill -> {
                         Skill skill = testSkill.getSkill();
                         return TestSkillVM.builder()
+                                .id(skill.getId())
                                 .code(skill.getCode())
                                 .name(skill.getName())
                                 .description(skill.getDescription())

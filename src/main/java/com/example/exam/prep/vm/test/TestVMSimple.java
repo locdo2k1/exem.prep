@@ -22,6 +22,7 @@ public class TestVMSimple {
             vm.setListSkill(test.getTestSkills().stream().map(testSkill -> {
                 com.example.exam.prep.model.Skill skill = testSkill.getSkill();
                 return TestSkillVM.builder()
+                        .id(skill != null ? skill.getId() : null)
                         .code(skill != null ? skill.getCode() : null)
                         .name(skill != null ? skill.getName() : null)
                         .description(skill != null ? skill.getDescription() : null)
