@@ -13,7 +13,8 @@ public class TestVMSimple {
     private java.util.List<TestSkillVM> listSkill;
 
     public static TestVMSimple fromEntity(com.example.exam.prep.model.Test test) {
-        if (test == null) return null;
+        if (test == null)
+            return null;
         TestVMSimple vm = new TestVMSimple();
         vm.setId(test.getId());
         vm.setName(test.getName());
