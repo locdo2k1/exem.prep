@@ -61,7 +61,7 @@ public class TestResultServiceImpl implements ITestResultService {
                 int totalAnsweredQuestion = questionResponses.size();
 
                 List<QuestionResponse> correctQuestions = questionResponses.stream()
-                                .filter(QuestionResponse::getIsCorrect)
+                                .filter(qr -> qr.getIsCorrect() != null && qr.getIsCorrect())
                                 .toList();
 
                 int correctQuestionsCount = correctQuestions.size();
@@ -95,7 +95,11 @@ public class TestResultServiceImpl implements ITestResultService {
                 questionResponses = unitOfWork.getQuestionResponseRepository().findByTestAttemptId(attemptId);
 
                 // Get all questions in the test
-                List<QuestionResultDTO> allQuestions = getAllQuestionsInTest(testAttempt.getTest().getId());
+                Test test = testAttempt.getTest();
+                if (test == null) {
+                        throw new RuntimeException("Test not found for attempt ID: " + attemptId);
+                }
+                List<QuestionResultDTO> allQuestions = getAllQuestionsInTest(test.getId());
 
                 // Get attempted part IDs
                 List<UUID> attemptedPartIds = getAttemptedPartIds(attemptId);
@@ -289,20 +293,27 @@ public class TestResultServiceImpl implements ITestResultService {
                 // question sets)
                 testParts.forEach(part -> {
                         // Map questions from TestPartQuestion
-                        part.getTestPartQuestions().forEach(tpq -> {
-                                if (tpq.getQuestion() != null) {
-                                        questionToPartMap.put(tpq.getQuestion().getId(), part);
-                                }
-                        });
-
-                        // Map questions from TestPartQuestionSet
-                        part.getTestPartQuestionSets().forEach(partSet -> {
-                                partSet.getQuestionSet().getQuestionSetItems().forEach(item -> {
-                                        if (item.getQuestion() != null) {
-                                                questionToPartMap.put(item.getQuestion().getId(), part);
+                        if (part.getTestPartQuestions() != null) {
+                                part.getTestPartQuestions().forEach(tpq -> {
+                                        if (tpq.getQuestion() != null) {
+                                                questionToPartMap.put(tpq.getQuestion().getId(), part);
                                         }
                                 });
-                        });
+                        }
+
+                        // Map questions from TestPartQuestionSet
+                        if (part.getTestPartQuestionSets() != null) {
+                                part.getTestPartQuestionSets().forEach(partSet -> {
+                                        if (partSet != null && partSet.getQuestionSet() != null
+                                                        && partSet.getQuestionSet().getQuestionSetItems() != null) {
+                                                partSet.getQuestionSet().getQuestionSetItems().forEach(item -> {
+                                                        if (item != null && item.getQuestion() != null) {
+                                                                questionToPartMap.put(item.getQuestion().getId(), part);
+                                                        }
+                                                });
+                                        }
+                                });
+                        }
                 });
 
                 // 1. Get direct questions from TestQuestionDetail (no part)
@@ -365,7 +376,8 @@ public class TestResultServiceImpl implements ITestResultService {
 
                 // Find the corresponding question response if it exists
                 QuestionResponse questionResponse = questionResponses != null ? questionResponses.stream()
-                                .filter(response -> response.getQuestion().getId().equals(question.getId()))
+                                .filter(response -> response != null && response.getQuestion() != null
+                                                && response.getQuestion().getId().equals(question.getId()))
                                 .findFirst()
                                 .orElse(null) : null;
 
@@ -381,7 +393,7 @@ public class TestResultServiceImpl implements ITestResultService {
                                 .context(question.getPrompt())
                                 .explanation(null) // No explanation in Question entity
                                 .transcript(question.getTranscript()) // Using transcript from Question entity
-                                .questionType(question.getQuestionType() != null ? question.getQuestionType().getCode()
+                                .questionType(question.getQuestionType() != null ? question.getQuestionType().getName()
                                                 : null)
                                 .isCorrect(questionResponse != null ? questionResponse.getIsCorrect() : null)
                                 .correctOptions(question.getOptions() != null ? question.getOptions().stream()
@@ -415,7 +427,7 @@ public class TestResultServiceImpl implements ITestResultService {
         // ============= Helper Methods to Reduce Nesting =============
 
         private int calculateTotalQuestions(List<TestPartAttempt> testPartAttempts, TestAttempt testAttempt) {
-                if (!testPartAttempts.isEmpty()) {
+                if (testPartAttempts != null && !testPartAttempts.isEmpty()) {
                         return testPartAttempts.stream()
                                         .mapToInt(testPartAttempt -> countQuestionsInTestPart(testPartAttempt,
                                                         testAttempt))
@@ -426,6 +438,9 @@ public class TestResultServiceImpl implements ITestResultService {
 
         private int countQuestionsInTestPart(TestPartAttempt testPartAttempt, TestAttempt testAttempt) {
                 Part part = testPartAttempt.getPart();
+                if (part == null || part.getTestParts() == null) {
+                        return 0;
+                }
                 TestPart testPart = part.getTestParts().stream()
                                 .filter(tp -> tp.getTest().getId().equals(testAttempt.getTest().getId()))
                                 .findFirst()
@@ -470,6 +485,9 @@ public class TestResultServiceImpl implements ITestResultService {
         }
 
         private List<PartViewModel> buildPartsList(List<TestPartAttempt> testPartAttempts) {
+                if (testPartAttempts == null) {
+                        return Collections.emptyList();
+                }
                 return testPartAttempts.stream()
                                 .map(TestPartAttempt::getPart)
                                 .filter(Objects::nonNull)
@@ -481,6 +499,7 @@ public class TestResultServiceImpl implements ITestResultService {
                 return unitOfWork.getTestPartAttemptRepository()
                                 .findByTestAttemptId(attemptId)
                                 .stream()
+                                .filter(tpa -> tpa.getPart() != null)
                                 .map(testPartAttempt -> testPartAttempt.getPart().getId())
                                 .collect(Collectors.toList());
         }
@@ -534,16 +553,23 @@ public class TestResultServiceImpl implements ITestResultService {
                 Map<UUID, String> textAnswers = new HashMap<>();
                 Map<UUID, Boolean> correctness = new HashMap<>();
 
+                if (questionResponses == null) {
+                        return new QuestionResponseMaps(selectedOptionIds, textAnswers, correctness);
+                }
+
                 for (QuestionResponse response : questionResponses) {
-                        if (response.getQuestion() == null) {
+                        if (response == null || response.getQuestion() == null) {
                                 continue;
                         }
                         UUID questionId = response.getQuestion().getId();
 
-                        selectedOptionIds.put(questionId,
-                                        response.getSelectedOptions().stream()
-                                                        .map(opt -> opt.getOption().getId())
-                                                        .collect(Collectors.toSet()));
+                        if (response.getSelectedOptions() != null) {
+                                selectedOptionIds.put(questionId,
+                                                response.getSelectedOptions().stream()
+                                                                .filter(so -> so != null && so.getOption() != null)
+                                                                .map(opt -> opt.getOption().getId())
+                                                                .collect(Collectors.toSet()));
+                        }
 
                         if (response.getTextAnswer() != null && !response.getTextAnswer().isEmpty()) {
                                 textAnswers.put(questionId, response.getTextAnswer());
@@ -604,40 +630,44 @@ public class TestResultServiceImpl implements ITestResultService {
         }
 
         private void collectDirectQuestions(TestPart testPart, List<QuestionWithQuestionSetInfo> questionsWithInfo) {
-                if (testPart.getTestPartQuestions() != null) {
-                        testPart.getTestPartQuestions().stream()
-                                        .filter(Objects::nonNull)
-                                        .forEach(tpq -> {
-                                                if (tpq != null && tpq.getQuestion() != null) {
-                                                        questionsWithInfo.add(new QuestionWithQuestionSetInfo(
-                                                                        tpq.getQuestion(), null));
-                                                }
-                                        });
+                if (testPart == null || testPart.getTestPartQuestions() == null) {
+                        return;
                 }
+                testPart
+                                .getTestPartQuestions().stream()
+                                .filter(Objects::nonNull)
+                                .forEach(tpq -> {
+                                        if (tpq != null && tpq.getQuestion() != null) {
+                                                questionsWithInfo
+                                                                .add(new QuestionWithQuestionSetInfo(tpq.getQuestion(),
+                                                                                null));
+                                        }
+                                });
         }
 
         private void collectQuestionSetQuestions(TestPart testPart,
                         List<QuestionWithQuestionSetInfo> questionsWithInfo) {
-                if (testPart.getTestPartQuestionSets() != null) {
-                        testPart.getTestPartQuestionSets().stream()
-                                        .filter(Objects::nonNull)
-                                        .forEach(tpqs -> {
-                                                if (tpqs.getQuestionSet() != null && tpqs.getQuestionSet()
-                                                                .getQuestionSetItems() != null) {
-                                                        String description = tpqs.getQuestionSet().getDescription();
-                                                        tpqs.getQuestionSet().getQuestionSetItems().stream()
-                                                                        .filter(Objects::nonNull)
-                                                                        .forEach(item -> {
-                                                                                if (item.getQuestion() != null) {
-                                                                                        questionsWithInfo.add(
-                                                                                                        new QuestionWithQuestionSetInfo(
-                                                                                                                        item.getQuestion(),
-                                                                                                                        description));
-                                                                                }
-                                                                        });
-                                                }
-                                        });
+                if (testPart == null || testPart.getTestPartQuestionSets() == null) {
+                        return;
                 }
+                testPart.getTestPartQuestionSets().stream()
+                                .filter(Objects::nonNull)
+                                .forEach(tpqs -> {
+                                        if (tpqs.getQuestionSet() != null && tpqs.getQuestionSet()
+                                                        .getQuestionSetItems() != null) {
+                                                String description = tpqs.getQuestionSet().getDescription();
+                                                tpqs.getQuestionSet().getQuestionSetItems().stream()
+                                                                .filter(Objects::nonNull)
+                                                                .forEach(item -> {
+                                                                        if (item.getQuestion() != null) {
+                                                                                questionsWithInfo.add(
+                                                                                                new QuestionWithQuestionSetInfo(
+                                                                                                                item.getQuestion(),
+                                                                                                                description));
+                                                                        }
+                                                                });
+                                        }
+                                });
         }
 
         private QuestionResultVM mapQuestionWithInfoToVM(QuestionWithQuestionSetInfo qinfo,
@@ -728,16 +758,21 @@ public class TestResultServiceImpl implements ITestResultService {
 
                 if (testPartOpt.isPresent()) {
                         TestPart testPart = testPartOpt.get();
-                        partOrder = testPart.getOrderIndex();
-                        Part partEntity = testPart.getPart();
-                        if (partEntity != null) {
-                                partName = partEntity.getName();
+                        if (testPart != null) {
+                                partOrder = testPart.getOrderIndex();
+                                Part partEntity = testPart.getPart();
+                                if (partEntity != null) {
+                                        partName = partEntity.getName();
+                                }
                         }
                 }
                 return new PartInfo(partName, partOrder);
         }
 
         private List<QuestionResultVM> buildOverallQuestionsList(Test test, QuestionResponseMaps responseMaps) {
+                if (test == null) {
+                        return Collections.emptyList();
+                }
                 List<QuestionResultVM> directQuestions = buildDirectQuestions(test, responseMaps);
                 List<QuestionResultVM> questionSetQuestions = buildQuestionSetQuestions(test, responseMaps);
 
@@ -747,6 +782,9 @@ public class TestResultServiceImpl implements ITestResultService {
         }
 
         private List<QuestionResultVM> buildDirectQuestions(Test test, QuestionResponseMaps responseMaps) {
+                if (test.getTestQuestionDetails() == null) {
+                        return Collections.emptyList();
+                }
                 return test.getTestQuestionDetails().stream()
                                 .sorted(Comparator.comparing(TestQuestionDetail::getOrder))
                                 .map(detail -> mapTestQuestionDetailToVM(detail, responseMaps))
@@ -764,6 +802,9 @@ public class TestResultServiceImpl implements ITestResultService {
         }
 
         private List<QuestionResultVM> buildQuestionSetQuestions(Test test, QuestionResponseMaps responseMaps) {
+                if (test.getTestQuestionSetDetails() == null) {
+                        return Collections.emptyList();
+                }
                 return test.getTestQuestionSetDetails().stream()
                                 .sorted(Comparator.comparing(TestQuestionSetDetail::getOrder))
                                 .flatMap(detail -> mapQuestionSetDetailToVMs(detail, responseMaps))
@@ -796,7 +837,7 @@ public class TestResultServiceImpl implements ITestResultService {
                                 .context(question.getPrompt())
                                 .explanation(null)
                                 .transcript(question.getTranscript())
-                                .questionType(question.getQuestionType() != null ? question.getQuestionType().getCode()
+                                .questionType(question.getQuestionType() != null ? question.getQuestionType().getName()
                                                 : null)
                                 .options(mapOptions(question, selectedOptionIds))
                                 .correctOptions(mapCorrectOptions(question))
