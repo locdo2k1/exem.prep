@@ -44,6 +44,7 @@ public class TestResultController {
      *         tests)
      *         - Outer content (question set description) if question belongs to a
      *         question set
+     *         - Test-level audio files (from test files)
      */
     @GetMapping("/attempts/{attemptId}/answers")
     public ResponseEntity<ApiResponse<AnswerResultVM>> getTestAnswers(

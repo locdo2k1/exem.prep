@@ -2,7 +2,6 @@ package com.example.exam.prep.vm.test;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +15,5 @@ public class TestCreateVM {
     private List<TestQuestionOrderVM> listQuestion;
     private List<UUID> skillIds;
     private UUID testCategoryId;
-    private List<MultipartFile> files;
     private Integer durationMinutes;
 }

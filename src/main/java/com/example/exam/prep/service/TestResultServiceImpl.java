@@ -168,10 +168,14 @@ public class TestResultServiceImpl implements ITestResultService {
                                                 Comparator.nullsLast(Comparator.naturalOrder())))
                                 .collect(Collectors.toList());
 
+                // Get audio files from the test
+                List<FileInfoResultVM> audioFiles = getTestAudioFiles(testAttempt.getTest());
+
                 // Build the final result
                 return AnswerResultVM.builder()
                                 .parts(sortedParts)
                                 .overall(allQuestions)
+                                .audioFiles(audioFiles)
                                 .build();
         }
 
@@ -890,6 +894,24 @@ public class TestResultServiceImpl implements ITestResultService {
                         return null;
                 }
                 return question.getFileInfos().stream()
+                                .map(this::mapFileInfoToVM)
+                                .collect(Collectors.toList());
+        }
+
+        /**
+         * Retrieves audio files associated with a test
+         * 
+         * @param test The test entity
+         * @return List of FileInfoResultVM representing the audio files
+         */
+        private List<FileInfoResultVM> getTestAudioFiles(Test test) {
+                if (test == null || test.getTestFiles() == null || test.getTestFiles().isEmpty()) {
+                        return Collections.emptyList();
+                }
+
+                return test.getTestFiles().stream()
+                                .map(TestFile::getFile)
+                                .filter(Objects::nonNull)
                                 .map(this::mapFileInfoToVM)
                                 .collect(Collectors.toList());
         }

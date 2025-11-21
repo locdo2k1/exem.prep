@@ -57,8 +57,8 @@ public class PracticeTestController {
     public ResponseEntity<ApiResponse<TestAttemptVM>> submitPracticeTestPart(
             @RequestBody SubmitPracticeTestPartRequest request) {
         TestAttempt attempt = practiceTestService.submitPracticeTestPart(request);
-        return ResponseEntity.ok(ApiResponse.success(TestAttemptVM.fromEntity(attempt), 
-            PracticeTestResponseConstants.PRACTICE_TEST_RETRIEVED_SUCCESSFULLY.getMessage()));
+        return ResponseEntity.ok(ApiResponse.success(TestAttemptVM.fromEntity(attempt),
+                PracticeTestResponseConstants.PRACTICE_TEST_RETRIEVED_SUCCESSFULLY.getMessage()));
     }
 
     /**
@@ -100,12 +100,15 @@ public class PracticeTestController {
     }
 
     /**
-     * Get practice part details by ID and test ID, optionally with test attempt ID for correctness info
+     * Get practice part details by ID and test ID, optionally with test attempt ID
+     * for correctness info
      * 
-     * @param partId The ID of the part to retrieve
-     * @param testId The ID of the test that contains this part
-     * @param testAttemptId Optional ID of the test attempt to fetch correctness information
-     * @return PracticePartVM containing the part details, with correctness if testAttemptId is provided
+     * @param partId        The ID of the part to retrieve
+     * @param testId        The ID of the test that contains this part
+     * @param testAttemptId Optional ID of the test attempt to fetch correctness
+     *                      information
+     * @return PracticePartVM containing the part details, with correctness if
+     *         testAttemptId is provided
      */
     @GetMapping("/tests/{testId}/parts/{partId}")
     public ResponseEntity<PracticePartVM> getPracticePartById(
@@ -123,10 +126,12 @@ public class PracticeTestController {
     }
 
     /**
-     * Get practice test data for specific parts of a test, optionally with test attempt ID for correctness info
+     * Get practice test data for specific parts of a test, optionally with test
+     * attempt ID for correctness info
      * 
      * @param testId  The ID of the test
-     * @param request Optional request containing partIds and testAttemptId (as refId)
+     * @param request Optional request containing partIds and testAttemptId (as
+     *                refId)
      * @return ApiResponse containing PracticeTestVM with the requested test parts
      */
     @PostMapping("/tests/{testId}/practice")
@@ -136,14 +141,14 @@ public class PracticeTestController {
 
         Set<UUID> partIds = request != null ? request.getPartIds() : null;
         UUID testAttemptId = request != null && request.getRefId() != null ? request.getRefId().orElse(null) : null;
-        
+
         PracticeTestVM practiceTestVM;
         if (testAttemptId != null) {
             practiceTestVM = practiceTestService.getPracticeTestByParts(testId, partIds, testAttemptId);
         } else {
             practiceTestVM = practiceTestService.getPracticeTestByParts(testId, partIds);
         }
-        
+
         return ResponseEntity.ok(ApiResponse.success(practiceTestVM,
                 PracticeTestResponseConstants.PRACTICE_TEST_RETRIEVED_SUCCESSFULLY.getMessage()));
     }

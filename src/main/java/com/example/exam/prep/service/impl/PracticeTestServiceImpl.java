@@ -61,23 +61,23 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
     public TestAttempt submitPracticeTestPart(SubmitPracticeTestPartRequest request) {
         // Get the authenticated user ID
         UUID userId = authHelper.getAuthenticatedUserIdOrThrow();
-        
+
         // Get the user
         User user = unitOfWork.getUserRepository().findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        
+
         // Get the test attempt
         TestAttempt testAttempt = new TestAttempt();
         Test test = unitOfWork.getTestRepository().findById(request.getTestId())
                 .orElseThrow(() -> new ResourceNotFoundException("Test not found with id: " + request.getTestId()));
-                
+
         // Set test and user information
         testAttempt.setTest(test);
         testAttempt.setUser(user);
         testAttempt.setDurationSeconds(request.getDuration());
         testAttempt.setStartTime(Instant.now());
         testAttempt.setStatus(TestStatus.ONGOING);
-        
+
         // Save the test attempt
         testAttempt = unitOfWork.getTestAttemptRepository().save(testAttempt);
 
@@ -113,31 +113,34 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                 // Handle text answer if present
                 if (answer.getAnswerText() != null && !answer.getAnswerText().trim().isEmpty()) {
                     response.setTextAnswer(answer.getAnswerText());
-                    
+
                     // For text answers, check if there's a correct answer defined
                     if (question.getFillBlankAnswers() != null && !question.getFillBlankAnswers().isEmpty()) {
-                        // Check if any of the correct answers match the user's answer (case-insensitive)
+                        // Check if any of the correct answers match the user's answer
+                        // (case-insensitive)
                         boolean isCorrect = question.getFillBlankAnswers().stream()
-                                .anyMatch(fillBlank -> answer.getAnswerText().trim().equalsIgnoreCase(fillBlank.getAnswerText().trim()));
+                                .anyMatch(fillBlank -> answer.getAnswerText().trim()
+                                        .equalsIgnoreCase(fillBlank.getAnswerText().trim()));
                         response.setIsCorrect(isCorrect);
                         // Set score based on correctness
                         response.setScore(isCorrect ? question.getScore() : 0.0);
                     }
-                    // If no correct answer is defined, we can't determine correctness, so leave it as null
+                    // If no correct answer is defined, we can't determine correctness, so leave it
+                    // as null
                 }
                 // Handle selected options if any
                 else if (answer.getSelectedOptionIds() != null && !answer.getSelectedOptionIds().isEmpty()) {
                     // For multiple choice, get all selected options
                     Set<QuestionResponseOption> selectedOptions = new HashSet<>();
                     Set<UUID> selectedOptionIds = new HashSet<>();
-                    
+
                     // Get all correct option IDs for this question
                     List<Option> allOptions = unitOfWork.getOptionRepository().findByQuestionId(question.getId());
                     Set<UUID> correctOptionIds = allOptions.stream()
                             .filter(Option::isCorrect)
                             .map(Option::getId)
                             .collect(Collectors.toSet());
-                    
+
                     // Track selected option IDs and create response options
                     for (UUID optionId : answer.getSelectedOptionIds()) {
                         Option option = unitOfWork.getOptionRepository().findById(optionId)
@@ -150,14 +153,15 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                         selectedOptionIds.add(optionId);
                     }
                     response.setSelectedOptions(selectedOptions);
-                    
-                    // Check if the answer is correct (all correct options selected and no incorrect ones)
-                    boolean isCorrect = selectedOptionIds.containsAll(correctOptionIds) && 
-                                     correctOptionIds.containsAll(selectedOptionIds);
+
+                    // Check if the answer is correct (all correct options selected and no incorrect
+                    // ones)
+                    boolean isCorrect = selectedOptionIds.containsAll(correctOptionIds) &&
+                            correctOptionIds.containsAll(selectedOptionIds);
                     response.setIsCorrect(isCorrect);
                     // Set score based on correctness
                     response.setScore(isCorrect ? question.getScore() : 0.0);
-                } 
+                }
 
                 // Save the response
                 unitOfWork.getQuestionResponseRepository().save(response);
@@ -297,23 +301,23 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
      */
     private PracticeFileInfoVM mapFileInfoToVM(FileInfo fileInfo) {
         String fileUrl = fileInfo.getUrl();
-        
+
         // If URL is not set, try to create a shareable link
         if (fileUrl == null || fileUrl.isEmpty()) {
             try {
                 fileUrl = fileStorageService.createShareableLink(
-                    fileInfo.getFilePath(),
-                    "viewer",  // access level
-                    true,      // allow download
-                    "public",  // audience
-                    "public"   // requested visibility
+                        fileInfo.getFilePath(),
+                        "viewer", // access level
+                        true, // allow download
+                        "public", // audience
+                        "public" // requested visibility
                 );
             } catch (Exception e) {
                 // Log the error and use the existing URL (which might be null)
                 log.error("Failed to create shareable link for file: " + fileInfo.getFilePath(), e);
             }
         }
-        
+
         return new PracticeFileInfoVM(
                 fileInfo.getId(),
                 fileInfo.getFileName(),
@@ -514,7 +518,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Load all question responses for the given test attempt
         List<QuestionResponse> questionResponses = unitOfWork.getQuestionResponseRepository()
                 .findByTestAttemptId(testAttemptId);
-        
+
         // Create a map of question ID to correctness for quick lookup
         Map<UUID, Boolean> questionCorrectness = new HashMap<>();
         for (QuestionResponse response : questionResponses) {
@@ -547,7 +551,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                                 question.getQuestionType() != null ? question.getQuestionType().getName() : "");
                         Integer displayOrder = testPartQuestion.getDisplayOrder();
                         questionVM.setOrder(displayOrder != null ? displayOrder : 0);
-                        
+
                         // Set correctness from attempt data if available
                         Boolean isCorrect = questionCorrectness.get(question.getId());
                         questionVM.setCorrect(java.util.Optional.ofNullable(isCorrect));
@@ -612,7 +616,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                                                 : "");
                                         Integer itemOrder = item.getOrder();
                                         qVM.setOrder(itemOrder != null ? itemOrder + orderVal - 1 : 0);
-                                        
+
                                         // Set correctness from attempt data if available
                                         Boolean isCorrect = questionCorrectness.get(question.getId());
                                         qVM.setCorrect(java.util.Optional.ofNullable(isCorrect));
@@ -672,7 +676,8 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                     .filter(tp -> tp.getPart() != null)
                     .filter(tp -> partIds == null || partIds.isEmpty() ||
                             partIds.contains(tp.getPart().getId()))
-                    .sorted(Comparator.comparing(TestPart::getOrderIndex, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .sorted(Comparator.comparing(TestPart::getOrderIndex,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
                     .collect(Collectors.toList());
 
             // Process each test part to get its details and questions/question sets
@@ -731,8 +736,12 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Sort all items by their order
         allQuestionItems.sort(Comparator.comparingInt(PracticeQuestionAndQuestionSetVM::getOrder));
 
+        // Get audio files from test
+        List<PracticeFileInfoVM> audioFiles = getTestAudioFiles(test);
+
         vm.setParts(parts);
         vm.setQuestionAndQuestionSet(allQuestionItems);
+        vm.setAudioFiles(audioFiles);
         return vm;
     }
 
@@ -745,7 +754,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Load all question responses for the given test attempt
         List<QuestionResponse> questionResponses = unitOfWork.getQuestionResponseRepository()
                 .findByTestAttemptId(testAttemptId);
-        
+
         // Create a map of question ID to correctness for quick lookup
         Map<UUID, Boolean> questionCorrectness = new HashMap<>();
         for (QuestionResponse response : questionResponses) {
@@ -771,7 +780,8 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                     .filter(tp -> tp.getPart() != null)
                     .filter(tp -> partIds == null || partIds.isEmpty() ||
                             partIds.contains(tp.getPart().getId()))
-                    .sorted(Comparator.comparing(TestPart::getOrderIndex, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .sorted(Comparator.comparing(TestPart::getOrderIndex,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
                     .collect(Collectors.toList());
 
             // Process each test part to get its details and questions/question sets
@@ -796,7 +806,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                         Question question = detail.getQuestion();
                         int order = detail.getOrder() != null ? detail.getOrder() : 0;
                         PracticeQuestionVM questionVM = mapQuestionToVM(question, order, null);
-                        
+
                         // Set correctness from attempt data if available
                         Boolean isCorrect = questionCorrectness.get(question.getId());
                         questionVM.setCorrect(java.util.Optional.ofNullable(isCorrect));
@@ -821,7 +831,7 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
                         QuestionSet questionSet = detail.getQuestionSet();
                         int order = detail.getOrder() != null ? detail.getOrder() : 0;
                         PracticeQuestionSetVM setVM = mapQuestionSetToVM(questionSet, order);
-                        
+
                         // Update questions in the set with correctness information
                         if (setVM.getQuestions() != null) {
                             setVM.getQuestions().forEach(q -> {
@@ -842,8 +852,30 @@ public class PracticeTestServiceImpl implements IPracticeTestService {
         // Sort all items by their order
         allQuestionItems.sort(Comparator.comparingInt(PracticeQuestionAndQuestionSetVM::getOrder));
 
+        // Get audio files from test
+        List<PracticeFileInfoVM> audioFiles = getTestAudioFiles(test);
+
         vm.setParts(parts);
         vm.setQuestionAndQuestionSet(allQuestionItems);
+        vm.setAudioFiles(audioFiles);
         return vm;
+    }
+
+    /**
+     * Get audio files from test
+     * 
+     * @param test The test entity
+     * @return List of PracticeFileInfoVM representing audio files
+     */
+    private List<PracticeFileInfoVM> getTestAudioFiles(Test test) {
+        if (test == null || test.getTestFiles() == null || test.getTestFiles().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return test.getTestFiles().stream()
+                .map(TestFile::getFile)
+                .filter(Objects::nonNull)
+                .map(this::mapFileInfoToVM)
+                .collect(Collectors.toList());
     }
 }
