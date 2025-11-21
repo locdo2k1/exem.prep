@@ -70,7 +70,7 @@ public class TestResultServiceImpl implements ITestResultService {
 
                 int totalQuestions = 0;
                 List<PartViewModel> partsList = new ArrayList<>();
-                
+
                 if (!testPartAttempts.isEmpty()) {
                         for (TestPartAttempt testPartAttempt : testPartAttempts) {
                                 Part part = testPartAttempt.getPart();
@@ -101,7 +101,7 @@ public class TestResultServiceImpl implements ITestResultService {
                                 }
 
                                 totalQuestions += directQuestions + questionsInSets;
-                                
+
                                 // Add part to partsList
                                 partsList.add(PartViewModel.fromModel(part));
                         }
@@ -282,80 +282,85 @@ public class TestResultServiceImpl implements ITestResultService {
                                         UUID partId = part.getId();
                                         UUID testId = testAttempt.getTest().getId();
 
-                                        // Get all questions for this part
+                                        // Get all questions for this part with their question set info
                                         List<QuestionResultVM> questionResults = unitOfWork.getTestPartRepository()
                                                         .findByPartIdAndTestId(partId, testId)
                                                         .stream()
                                                         .flatMap(testPart -> {
-                                                                // Get questions from testPartQuestions with null checks
-                                                                Stream<Question> directQuestions = testPart
-                                                                                .getTestPartQuestions().stream()
-                                                                                .filter(Objects::nonNull)
-                                                                                .map(tpq -> {
-                                                                                        if (tpq == null || tpq
-                                                                                                        .getQuestion() == null) {
-                                                                                                return null;
-                                                                                        }
-                                                                                        Question original = tpq
-                                                                                                        .getQuestion();
-                                                                                        if (tpq.getDisplayOrder() != null) {
-                                                                                                original.setOrder(tpq
-                                                                                                                .getDisplayOrder());
-                                                                                        }
-                                                                                        return original;
-                                                                                })
-                                                                                .filter(Objects::nonNull);
+                                                                List<QuestionWithQuestionSetInfo> questionsWithInfo = new ArrayList<>();
+
+                                                                // Get direct questions from testPartQuestions with null
+                                                                // checks
+                                                                if (testPart.getTestPartQuestions() != null) {
+                                                                        testPart.getTestPartQuestions().stream()
+                                                                                        .filter(Objects::nonNull)
+                                                                                        .forEach(tpq -> {
+                                                                                                if (tpq != null && tpq
+                                                                                                                .getQuestion() != null) {
+                                                                                                        Question question = tpq
+                                                                                                                        .getQuestion();
+                                                                                                        if (tpq.getDisplayOrder() != null) {
+                                                                                                                question.setOrder(
+                                                                                                                                tpq.getDisplayOrder());
+                                                                                                        }
+                                                                                                        questionsWithInfo
+                                                                                                                        .add(new QuestionWithQuestionSetInfo(
+                                                                                                                                        question,
+                                                                                                                                        null));
+                                                                                                }
+                                                                                        });
+                                                                }
 
                                                                 // Get questions from testPartQuestionSets with null
-                                                                // checks
-                                                                Stream<Question> questionSetQuestions = testPart
-                                                                                .getTestPartQuestionSets().stream()
-                                                                                .filter(Objects::nonNull)
-                                                                                .flatMap(qs -> {
-                                                                                        if (qs == null || qs
-                                                                                                        .getQuestionSet() == null
-                                                                                                        || qs.getQuestionSet()
-                                                                                                                        .getQuestionSetItems() == null) {
-                                                                                                return Stream.empty();
-                                                                                        }
-                                                                                        return qs.getQuestionSet()
-                                                                                                        .getQuestionSetItems()
-                                                                                                        .stream()
-                                                                                                        .filter(Objects::nonNull)
-                                                                                                        .sorted(Comparator
-                                                                                                                        .comparing(
-                                                                                                                                        QuestionSetItem::getOrder,
-                                                                                                                                        Comparator.nullsLast(
-                                                                                                                                                        Comparator.naturalOrder())))
-                                                                                                        .map(qsi -> {
-                                                                                                                if (qsi == null || qsi
-                                                                                                                                .getQuestion() == null) {
-                                                                                                                        return null;
-                                                                                                                }
-                                                                                                                Question original = qsi
-                                                                                                                                .getQuestion();
-                                                                                                                Integer order = qsi
-                                                                                                                                .getOrder();
-                                                                                                                Integer displayOrder = qs
-                                                                                                                                .getDisplayOrder();
-                                                                                                                if (order != null
-                                                                                                                                && displayOrder != null) {
-                                                                                                                        original.setOrder(
-                                                                                                                                        order - 1 + displayOrder);
-                                                                                                                }
-                                                                                                                return original;
-                                                                                                        })
-                                                                                                        .filter(Objects::nonNull);
-                                                                                });
+                                                                // checks and track their question set description
+                                                                if (testPart.getTestPartQuestionSets() != null) {
+                                                                        testPart.getTestPartQuestionSets().stream()
+                                                                                        .filter(Objects::nonNull)
+                                                                                        .forEach(tpqs -> {
+                                                                                                if (tpqs != null && tpqs
+                                                                                                                .getQuestionSet() != null) {
+                                                                                                        QuestionSet questionSet = tpqs
+                                                                                                                        .getQuestionSet();
+                                                                                                        String questionSetDescription = questionSet
+                                                                                                                        .getDescription();
 
-                                                                // Combine both streams and map to QuestionResultVM with
-                                                                // null checks
-                                                                return Stream
-                                                                                .concat(directQuestions,
-                                                                                                questionSetQuestions)
-                                                                                .filter(Objects::nonNull)
-                                                                                .map(question -> {
-                                                                                        // Skip if question is null
+                                                                                                        if (questionSet.getQuestionSetItems() != null) {
+                                                                                                                questionSet.getQuestionSetItems()
+                                                                                                                                .stream()
+                                                                                                                                .filter(Objects::nonNull)
+                                                                                                                                .sorted(Comparator
+                                                                                                                                                .comparing(QuestionSetItem::getOrder,
+                                                                                                                                                                Comparator.nullsLast(
+                                                                                                                                                                                Comparator.naturalOrder())))
+                                                                                                                                .forEach(qsi -> {
+                                                                                                                                        if (qsi != null && qsi
+                                                                                                                                                        .getQuestion() != null) {
+                                                                                                                                                Question question = qsi
+                                                                                                                                                                .getQuestion();
+                                                                                                                                                Integer order = qsi
+                                                                                                                                                                .getOrder();
+                                                                                                                                                Integer displayOrder = tpqs
+                                                                                                                                                                .getDisplayOrder();
+                                                                                                                                                if (order != null
+                                                                                                                                                                && displayOrder != null) {
+                                                                                                                                                        question.setOrder(
+                                                                                                                                                                        order - 1 + displayOrder);
+                                                                                                                                                }
+                                                                                                                                                questionsWithInfo
+                                                                                                                                                                .add(new QuestionWithQuestionSetInfo(
+                                                                                                                                                                                question,
+                                                                                                                                                                                questionSetDescription));
+                                                                                                                                        }
+                                                                                                                                });
+                                                                                                        }
+                                                                                                }
+                                                                                        });
+                                                                }
+
+                                                                // Map to QuestionResultVM
+                                                                return questionsWithInfo.stream()
+                                                                                .map(qinfo -> {
+                                                                                        Question question = qinfo.question;
                                                                                         if (question == null) {
                                                                                                 return null;
                                                                                         }
@@ -368,7 +373,20 @@ public class TestResultServiceImpl implements ITestResultService {
                                                                                                         .context(question
                                                                                                                         .getPrompt() != null
                                                                                                                                         ? question.getPrompt()
-                                                                                                                                        : "");
+                                                                                                                                        : "")
+                                                                                                        .outerContent(qinfo.questionSetDescription)
+                                                                                                        .questionType(question
+                                                                                                                        .getQuestionType() != null
+                                                                                                                                        ? question.getQuestionType()
+                                                                                                                                                        .getName()
+                                                                                                                                        : null);
+
+                                                                                        // Set transcript from Question
+                                                                                        // entity
+                                                                                        if (question.getTranscript() != null) {
+                                                                                                builder.transcript(
+                                                                                                                question.getTranscript());
+                                                                                        }
 
                                                                                         // Set options if available
                                                                                         if (question.getOptions() != null
@@ -464,7 +482,8 @@ public class TestResultServiceImpl implements ITestResultService {
                                                                                         }
 
                                                                                         return builder.build();
-                                                                                });
+                                                                                })
+                                                                                .filter(Objects::nonNull);
                                                         })
                                                         .collect(Collectors.toList());
 
@@ -514,8 +533,11 @@ public class TestResultServiceImpl implements ITestResultService {
                                                         .order(detail.getOrder())
                                                         .context(question.getPrompt()) // Using prompt as context
                                                         .explanation(null) // No explanation field in Question model
-                                                        .transcript(question.getAudioUrl()) // Using audioUrl as
-                                                        // transcript
+                                                        .transcript(question.getTranscript()) // Using transcript from
+                                                                                              // Question
+                                                        .questionType(question.getQuestionType() != null
+                                                                        ? question.getQuestionType().getCode()
+                                                                        : null)
                                                         .options(question.getOptions() != null
                                                                         ? question.getOptions()
                                                                                         .stream()
@@ -583,7 +605,12 @@ public class TestResultServiceImpl implements ITestResultService {
                                                                                                 + item.getOrder())
                                                                                 .context(question.getPrompt())
                                                                                 .explanation(null)
-                                                                                .transcript(question.getAudioUrl())
+                                                                                .transcript(question.getTranscript())
+                                                                                .questionType(question
+                                                                                                .getQuestionType() != null
+                                                                                                                ? question.getQuestionType()
+                                                                                                                                .getCode()
+                                                                                                                : null)
                                                                                 .options(question.getOptions() != null
                                                                                                 ? question.getOptions()
                                                                                                                 .stream()
@@ -695,6 +722,7 @@ public class TestResultServiceImpl implements ITestResultService {
                                         .context(dto.getContext())
                                         .explanation(dto.getExplanation())
                                         .transcript(dto.getTranscript())
+                                        .questionType(dto.getQuestionType())
                                         .isCorrect(dto.getIsCorrect())
                                         .correctOptions(dto.getCorrectOptions())
                                         .correctAnswers(dto.getCorrectAnswers())
@@ -914,7 +942,9 @@ public class TestResultServiceImpl implements ITestResultService {
                                 .order(order != null ? order : 0)
                                 .context(question.getPrompt())
                                 .explanation(null) // No explanation in Question entity
-                                .transcript(question.getAudioUrl()) // Using audioUrl as transcript
+                                .transcript(question.getTranscript()) // Using transcript from Question entity
+                                .questionType(question.getQuestionType() != null ? question.getQuestionType().getCode()
+                                                : null)
                                 .isCorrect(questionResponse != null ? questionResponse.getIsCorrect() : null)
                                 .correctOptions(question.getOptions() != null ? question.getOptions().stream()
                                                 .filter(Option::isCorrect)
@@ -942,5 +972,19 @@ public class TestResultServiceImpl implements ITestResultService {
                                                 ? List.of(question.getCategory().getName())
                                                 : Collections.emptyList())
                                 .build();
+        }
+
+        /**
+         * Helper class to track a question along with its parent question set
+         * description
+         */
+        private static class QuestionWithQuestionSetInfo {
+                Question question;
+                String questionSetDescription;
+
+                QuestionWithQuestionSetInfo(Question question, String questionSetDescription) {
+                        this.question = question;
+                        this.questionSetDescription = questionSetDescription;
+                }
         }
 }

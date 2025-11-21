@@ -9,6 +9,7 @@ import java.util.UUID;
 @Data
 public class CreateQuestionViewModel {
     private String prompt;
+    private String transcript;
     private UUID questionTypeId;
     private UUID categoryId;
     private String options;

@@ -10,7 +10,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -72,9 +71,10 @@ public class TestAttemptController {
     /**
      * Get the latest test attempts for a user with test names
      *
-     * @param userId The ID of the user
-     * @param limit Maximum number of attempts to return (default: 2)
-     * @param timezone The timezone to use for date/time formatting (e.g., "Asia/Ho_Chi_Minh")
+     * @param userId   The ID of the user
+     * @param limit    Maximum number of attempts to return (default: 2)
+     * @param timezone The timezone to use for date/time formatting (e.g.,
+     *                 "Asia/Ho_Chi_Minh")
      * @return List of test attempts with test names
      */
     @PostMapping("/latest")
@@ -82,12 +82,13 @@ public class TestAttemptController {
             @RequestParam("userId") UUID userId,
             @RequestParam(defaultValue = "2") int limit,
             @RequestParam(required = false) String timezone) {
-        
+
         if (limit < 1) {
             limit = 2; // Default to 2 if invalid limit provided
         }
-        
-        List<TestAttemptWithNameVM> attempts = testAttemptService.getLatestTestAttemptsWithTestName(userId, limit, timezone);
+
+        List<TestAttemptWithNameVM> attempts = testAttemptService.getLatestTestAttemptsWithTestName(userId, limit,
+                timezone);
         return ResponseEntity.ok(ApiResponse.success(attempts));
     }
 }

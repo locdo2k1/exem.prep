@@ -38,7 +38,10 @@ public class TestResultController {
      * Get all answers for a specific test attempt
      * 
      * @param attemptId The ID of the specific attempt
-     * @return List of test answers with question and selected options
+     * @return List of test answers with question and selected options, including:
+     *         - Transcription (audio URL) for audio/video questions
+     *         - Outer content (question set description) if question belongs to a
+     *         question set
      */
     @GetMapping("/attempts/{attemptId}/answers")
     public ResponseEntity<ApiResponse<AnswerResultVM>> getTestAnswers(
@@ -59,7 +62,7 @@ public class TestResultController {
         AnalysisQuestionsVM analysis = testResultService.getTestAttemptAnalysis(attemptId);
         return ResponseEntity.ok(ApiResponse.success(analysis));
     }
-    
+
     /**
      * Get test name and part names for a specific test attempt
      * 

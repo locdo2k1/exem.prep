@@ -53,6 +53,7 @@ public class QuestionService {
             QuestionViewModel viewModel = new QuestionViewModel();
             viewModel.setId(question.getId());
             viewModel.setPrompt(question.getPrompt());
+            viewModel.setTranscript(question.getTranscript());
 
             // Map category to view model
             if (question.getCategory() != null) {
@@ -113,19 +114,22 @@ public class QuestionService {
 
         // Fetch related entities
         QuestionType questionType = questionTypeRepository.findById(createDto.getQuestionTypeId())
-                .orElseThrow(() -> new EntityNotFoundException("QuestionType not found with id: " + createDto.getQuestionTypeId()));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "QuestionType not found with id: " + createDto.getQuestionTypeId()));
 
         // Create and map the question
         Question question = new Question();
         question.setQuestionType(questionType);
         question.setPrompt(createDto.getPrompt());
+        question.setTranscript(createDto.getTranscript());
         question.setScore(createDto.getScore());
         unitOfWork.getQuestionRepository().save(question);
 
         // Handle category if provided
         if (createDto.getCategoryId() != null) {
             QuestionCategory category = questionCategoryRepository.findById(createDto.getCategoryId())
-                    .orElseThrow(() -> new EntityNotFoundException("QuestionCategory not found with id: " + createDto.getCategoryId()));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "QuestionCategory not found with id: " + createDto.getCategoryId()));
             question.setCategory(category);
         }
 
@@ -147,7 +151,8 @@ public class QuestionService {
         if (createDto.getOptions() != null && !createDto.getOptions().isEmpty()) {
             ObjectMapper mapper = new ObjectMapper();
             try {
-                CreateQuestionOptionViewModel[] options = mapper.readValue(createDto.getOptions(), CreateQuestionOptionViewModel[].class);
+                CreateQuestionOptionViewModel[] options = mapper.readValue(createDto.getOptions(),
+                        CreateQuestionOptionViewModel[].class);
                 for (CreateQuestionOptionViewModel option : options) {
                     Option createdOption = new Option();
                     createdOption.setText(option.getText());
@@ -194,13 +199,15 @@ public class QuestionService {
                     QuestionType questionType = null;
                     if (updateDto.getQuestionTypeId() != null) {
                         questionType = questionTypeRepository.findById(updateDto.getQuestionTypeId())
-                                .orElseThrow(() -> new EntityNotFoundException("QuestionType not found with id: " + updateDto.getQuestionTypeId()));
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                        "QuestionType not found with id: " + updateDto.getQuestionTypeId()));
                         existingQuestion.setQuestionType(questionType);
                     }
 
                     if (updateDto.getCategoryId() != null) {
                         QuestionCategory category = questionCategoryRepository.findById(updateDto.getCategoryId())
-                                .orElseThrow(() -> new EntityNotFoundException("QuestionCategory not found with id: " + updateDto.getCategoryId()));
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                        "QuestionCategory not found with id: " + updateDto.getCategoryId()));
                         existingQuestion.setCategory(category);
                     } else {
                         existingQuestion.setCategory(null);
@@ -213,8 +220,7 @@ public class QuestionService {
                             List<UUID> deletedIds = objectMapper.readValue(
                                     updateDto.getDeletedAudiosIds(),
                                     new TypeReference<List<UUID>>() {
-                                    }
-                            );
+                                    });
 
                             existingQuestion.getFileInfos().removeIf(fileInfo -> deletedIds.contains(fileInfo.getId()));
                             deletedIds.forEach(fileId -> unitOfWork.getFileInfoRepository().deleteById(fileId));
@@ -223,15 +229,17 @@ public class QuestionService {
                         }
                     }
 
-                    //Update prompt and score
+                    // Update prompt and score
                     existingQuestion.setPrompt(updateDto.getPrompt());
+                    existingQuestion.setTranscript(updateDto.getTranscript());
                     existingQuestion.setScore(updateDto.getScore());
 
                     // Handle new file uploads
                     if (updateDto.getAudios() != null && !updateDto.getAudios().isEmpty()) {
                         try {
                             String filePath = FileConstant.QUESTION_FILES.getStringValue();
-                            List<FileInfo> uploadedFiles = fileStorageService.uploadFiles(updateDto.getAudios(), filePath);
+                            List<FileInfo> uploadedFiles = fileStorageService.uploadFiles(updateDto.getAudios(),
+                                    filePath);
 
                             // Associate new files with the question
                             for (FileInfo fileInfo : uploadedFiles) {
@@ -245,19 +253,22 @@ public class QuestionService {
 
                     // Handle options if provided
                     String multipleChoice = QuestionTypeConstant.MULTIPLE_CHOICE.toString();
-                    if (updateDto.getOptions() != null && !updateDto.getOptions().isEmpty() && questionType != null && (questionType.getName().equals(multipleChoice) || questionType.getName().equals(QuestionTypeConstant.SINGLE_CHOICE.toString()))) {
+                    if (updateDto.getOptions() != null && !updateDto.getOptions().isEmpty() && questionType != null
+                            && (questionType.getName().equals(multipleChoice)
+                                    || questionType.getName().equals(QuestionTypeConstant.SINGLE_CHOICE.toString()))) {
                         try {
                             // Clear existing options
-                            existingQuestion.getOptions().forEach(option -> unitOfWork.getOptionRepository().delete(option));
-                            existingQuestion.getFillBlankAnswers().forEach(blankAnswer -> unitOfWork.getFillBlankAnswerRepository().delete(blankAnswer));
+                            existingQuestion.getOptions()
+                                    .forEach(option -> unitOfWork.getOptionRepository().delete(option));
+                            existingQuestion.getFillBlankAnswers().forEach(
+                                    blankAnswer -> unitOfWork.getFillBlankAnswerRepository().delete(blankAnswer));
                             existingQuestion.getOptions().clear();
                             existingQuestion.getFillBlankAnswers().clear();
 
                             // Parse and add new options
                             CreateQuestionOptionViewModel[] options = objectMapper.readValue(
                                     updateDto.getOptions(),
-                                    CreateQuestionOptionViewModel[].class
-                            );
+                                    CreateQuestionOptionViewModel[].class);
 
                             for (CreateQuestionOptionViewModel optionDto : options) {
                                 Option option = new Option();
@@ -275,11 +286,14 @@ public class QuestionService {
                     // Handle blank answers if provided
                     String fillInBlank = QuestionTypeConstant.FILL_IN_THE_BLANK.getDisplayName(); // "Fill in the Blank"
 
-                    if (updateDto.getBlankAnswers() != null && !updateDto.getBlankAnswers().isEmpty() && questionType != null && questionType.getName().equals(fillInBlank)) {
+                    if (updateDto.getBlankAnswers() != null && !updateDto.getBlankAnswers().isEmpty()
+                            && questionType != null && questionType.getName().equals(fillInBlank)) {
                         try {
                             // Clear existing blank answers
-                            existingQuestion.getFillBlankAnswers().forEach(blankAnswer -> unitOfWork.getFillBlankAnswerRepository().delete(blankAnswer));
-                            existingQuestion.getOptions().forEach(option -> unitOfWork.getOptionRepository().delete(option));
+                            existingQuestion.getFillBlankAnswers().forEach(
+                                    blankAnswer -> unitOfWork.getFillBlankAnswerRepository().delete(blankAnswer));
+                            existingQuestion.getOptions()
+                                    .forEach(option -> unitOfWork.getOptionRepository().delete(option));
                             existingQuestion.getOptions().clear();
                             existingQuestion.getFillBlankAnswers().clear();
 
@@ -287,8 +301,7 @@ public class QuestionService {
                             List<String> blankAnswers = objectMapper.readValue(
                                     updateDto.getBlankAnswers(),
                                     new TypeReference<List<String>>() {
-                                    }
-                            );
+                                    });
 
                             for (String answerText : blankAnswers) {
                                 FillBlankAnswer blankAnswer = new FillBlankAnswer();
@@ -315,6 +328,7 @@ public class QuestionService {
                     QuestionViewModel viewModel = new QuestionViewModel();
                     viewModel.setId(question.getId());
                     viewModel.setPrompt(question.getPrompt());
+                    viewModel.setTranscript(question.getTranscript());
 
                     // Map category to view model
                     if (question.getCategory() != null) {
@@ -353,17 +367,17 @@ public class QuestionService {
                             .sorted(Comparator.comparingInt(OptionViewModel::getDisplayOrder))
                             .collect(Collectors.toList()));
                     // Map file infos to view models
-            viewModel.setQuestionAudios(question.getFileInfos().stream()
-                    .map(fileInfo -> {
-                        FileInfoViewModel fileInfoVM = new FileInfoViewModel();
-                        fileInfoVM.setId(fileInfo.getId());
-                        fileInfoVM.setFileName(fileInfo.getFileName());
-                        fileInfoVM.setFileUrl(fileInfo.getUrl());
-                        fileInfoVM.setFileType(fileInfo.getFileType());
-                        fileInfoVM.setFileSize(fileInfo.getFileSize());
-                        return fileInfoVM;
-                    })
-                    .collect(Collectors.toList()));
+                    viewModel.setQuestionAudios(question.getFileInfos().stream()
+                            .map(fileInfo -> {
+                                FileInfoViewModel fileInfoVM = new FileInfoViewModel();
+                                fileInfoVM.setId(fileInfo.getId());
+                                fileInfoVM.setFileName(fileInfo.getFileName());
+                                fileInfoVM.setFileUrl(fileInfo.getUrl());
+                                fileInfoVM.setFileType(fileInfo.getFileType());
+                                fileInfoVM.setFileSize(fileInfo.getFileSize());
+                                return fileInfoVM;
+                            })
+                            .collect(Collectors.toList()));
                     return viewModel;
                 });
     }

@@ -12,6 +12,7 @@ import java.util.UUID;
 public class QuestionViewModel {
     private UUID id;
     private String prompt;
+    private String transcript;
     private QuestionCategoryViewModel questionCategory;
     private QuestionTypeViewModel questionType;
     private int score;
