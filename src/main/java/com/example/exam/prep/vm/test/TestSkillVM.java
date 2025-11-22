@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TestSkillVM {
+    private java.util.UUID id;
     private String code;
     private String name;
     private String description;

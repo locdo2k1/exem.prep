@@ -690,6 +690,7 @@ public class TestServiceImpl implements ITestService {
                     .map(testSkill -> {
                         Skill skill = testSkill.getSkill();
                         return TestSkillVM.builder()
+                                .id(skill.getId())
                                 .code(skill.getCode())
                                 .name(skill.getName())
                                 .description(skill.getDescription())
@@ -980,9 +981,12 @@ public class TestServiceImpl implements ITestService {
                                         FlattenedQuestionVM flatQuestion = new FlattenedQuestionVM();
 
                                         // Set basic question info
-                                        flatQuestion.setOrder(testPartQuestionSet.getDisplayOrder() - 1 + item.getOrder());
                                         flatQuestion
-                                                .setPart(testPart.getPart().getName() != null ? testPart.getPart().getName() : "");
+                                                .setOrder(testPartQuestionSet.getDisplayOrder() - 1 + item.getOrder());
+                                        flatQuestion
+                                                .setPart(testPart.getPart().getName() != null
+                                                        ? testPart.getPart().getName()
+                                                        : "");
 
                                         // Set correct answer
                                         String correctAnswer = "";

@@ -37,22 +37,33 @@ public class QuestionSetController {
                         @RequestParam(defaultValue = "asc") String direction,
                         @RequestParam(required = false) String search) {
 
-                Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction)
+                // Parse sort parameter if it contains comma (e.g., "title,desc")
+                String sortField = sort;
+                String sortDir = direction;
+                if (sort.contains(",")) {
+                        String[] parts = sort.split(",");
+                        sortField = parts[0].trim();
+                        if (parts.length > 1) {
+                                sortDir = parts[1].trim();
+                        }
+                }
+
+                Sort.Direction sortDirection = "desc".equalsIgnoreCase(sortDir)
                                 ? Sort.Direction.DESC
                                 : Sort.Direction.ASC;
 
                 Pageable pageable = PageRequest.of(
                                 Math.max(0, page),
                                 Math.max(1, size),
-                                Sort.by(sortDirection, sort));
+                                Sort.by(sortDirection, sortField));
 
                 Page<QuestionSetSimpleVM> questionSets = questionSetService.findSimpleQuestionSets(search, pageable);
 
                 return ResponseEntity.ok(ApiResponse.<Page<QuestionSetSimpleVM>>builder()
-                        .success(true)
-                        .message(QuestionSetResponseMessage.QUESTION_SETS_RETRIEVED.getMessage())
-                        .data(questionSets)
-                        .build());
+                                .success(true)
+                                .message(QuestionSetResponseMessage.QUESTION_SETS_RETRIEVED.getMessage())
+                                .data(questionSets)
+                                .build());
         }
 
         @GetMapping
@@ -63,14 +74,25 @@ public class QuestionSetController {
                         @RequestParam(defaultValue = "asc") String direction,
                         @RequestParam(required = false) String search) {
 
-                Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction)
+                // Parse sort parameter if it contains comma (e.g., "title,desc")
+                String sortField = sort;
+                String sortDir = direction;
+                if (sort.contains(",")) {
+                        String[] parts = sort.split(",");
+                        sortField = parts[0].trim();
+                        if (parts.length > 1) {
+                                sortDir = parts[1].trim();
+                        }
+                }
+
+                Sort.Direction sortDirection = "desc".equalsIgnoreCase(sortDir)
                                 ? Sort.Direction.DESC
                                 : Sort.Direction.ASC;
 
                 Pageable pageable = PageRequest.of(
                                 Math.max(0, page),
                                 Math.max(1, size),
-                                Sort.by(sortDirection, sort));
+                                Sort.by(sortDirection, sortField));
 
                 Page<QuestionSetVM> questionSetVMs = (search != null && !search.trim().isEmpty())
                                 ? questionSetService.findQuestionSetVMsByTitleContaining(search.trim(), pageable)
@@ -86,7 +108,8 @@ public class QuestionSetController {
         public ResponseEntity<ApiResponse<QuestionSetVM>> getQuestionSetById(@PathVariable UUID id) {
                 QuestionSetVM questionSetVM = questionSetService.findById(id);
                 return ResponseEntity
-                .ok(ApiResponse.success(questionSetVM, QuestionSetResponseMessage.QUESTION_SET_RETRIEVED.getMessage()));
+                                .ok(ApiResponse.success(questionSetVM,
+                                                QuestionSetResponseMessage.QUESTION_SET_RETRIEVED.getMessage()));
         }
 
         @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE })
@@ -96,17 +119,18 @@ public class QuestionSetController {
                 try {
                         QuestionSet createdQuestionSet = questionSetService.createQuestionSet(questionSetVM);
 
-                        return ResponseEntity.
-                        status(HttpStatus.CREATED)
-                        .body(ApiResponse.success(createdQuestionSet, QuestionSetResponseMessage.QUESTION_SET_CREATED.getMessage()));
+                        return ResponseEntity.status(HttpStatus.CREATED)
+                                        .body(ApiResponse.success(createdQuestionSet,
+                                                        QuestionSetResponseMessage.QUESTION_SET_CREATED.getMessage()));
 
                 } catch (IllegalArgumentException e) {
                         return ResponseEntity.badRequest()
-                        .body(ApiResponse.error(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+                                        .body(ApiResponse.error(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
                 }
         }
 
-        @PutMapping(value = "/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE })
+        @PutMapping(value = "/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE,
+                        MediaType.APPLICATION_JSON_VALUE })
         public ResponseEntity<ApiResponse<QuestionSetVM>> updateQuestionSet(
                         @PathVariable UUID id,
                         @Valid @ModelAttribute QuestionSetUpdateVM questionSetVM) {
@@ -116,7 +140,7 @@ public class QuestionSetController {
 
                         QuestionSet updatedQuestionSet = questionSetService.updateQuestionSet(questionSetVM);
                         QuestionSetVM responseVM = questionSetService.findById(updatedQuestionSet.getId());
-                        
+
                         return ResponseEntity.ok(
                                         ApiResponse.success(responseVM,
                                                         QuestionSetResponseMessage.QUESTION_SET_UPDATED.getMessage()));

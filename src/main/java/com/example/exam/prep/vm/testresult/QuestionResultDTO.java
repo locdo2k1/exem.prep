@@ -72,4 +72,9 @@ public class QuestionResultDTO {
      * List of categories this question belongs to
      */
     private List<String> questionCategories;
+
+    /**
+     * List of audio/video files associated with this question
+     */
+    private List<FileInfoResultVM> questionAudios;
 }

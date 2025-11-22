@@ -67,7 +67,8 @@ public class Question extends BaseEntity {
     private Set<FileInfo> fileInfos = new HashSet<>();
 
     // Constructors
-    public Question() {}
+    public Question() {
+    }
 
     public Question(QuestionType questionType, String prompt) {
         this.questionType = questionType;

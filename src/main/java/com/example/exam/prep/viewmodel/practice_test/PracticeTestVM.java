@@ -15,4 +15,5 @@ public class PracticeTestVM {
     private String testName;
     private List<PracticePartVM> parts;
     private List<PracticeQuestionAndQuestionSetVM> questionAndQuestionSet;
+    private List<PracticeFileInfoVM> audioFiles;
 }
