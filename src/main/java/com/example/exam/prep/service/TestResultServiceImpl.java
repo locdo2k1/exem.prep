@@ -425,6 +425,7 @@ public class TestResultServiceImpl implements ITestResultService {
                                 .questionCategories(question.getCategory() != null
                                                 ? List.of(question.getCategory().getName())
                                                 : Collections.emptyList())
+                                .questionAudios(mapQuestionAudios(question))
                                 .build();
         }
 
@@ -968,6 +969,7 @@ public class TestResultServiceImpl implements ITestResultService {
                                 .userAnswer(dto.getUserAnswer())
                                 .options(dto.getOptions())
                                 .questionCategories(dto.getQuestionCategories())
+                                .questionAudios(dto.getQuestionAudios())
                                 .build();
         }
 
@@ -1003,7 +1005,7 @@ public class TestResultServiceImpl implements ITestResultService {
                                 .count();
 
                 double accuracy = (correctCount + incorrectCount) == 0 ? 0.0
-                                : (double) correctCount / (correctCount + incorrectCount) * 100;
+                                : Math.round((double) correctCount / (correctCount + incorrectCount) * 10000.0) / 100.0;
 
                 return AnalysisQuesCategory.builder()
                                 .categoryName(categoryName)
